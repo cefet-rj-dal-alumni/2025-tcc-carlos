@@ -1,0 +1,32 @@
+#Lib
+```{r}
+library(bigrquery)
+
+```
+
+#Obter 2022 a 2023
+```{r}
+sql_query <- '
+SELECT  data,
+        status_infracao,
+        valor_pago,
+        especie_veiculo,
+        data_pagamento,
+        data_limite_recurso,
+        data_pagamento,
+        descricao_situacao_autuacao,
+        tipo_veiculo 
+FROM `rj-smtr.transito.autuacao` 
+WHERE data >= "2022-01-01" AND data < "2023-01-01" 
+ORDER BY data ASC
+LIMIT 10'
+```
+
+#Executar
+```{r}
+results <- bq_project_query(project_id, sql_query) 
+df_autuacao <- bq_table_download(results)
+```
+
+
+

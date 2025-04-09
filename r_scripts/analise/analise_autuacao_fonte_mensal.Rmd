@@ -1,0 +1,42 @@
+Dependências
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+
+Cabeçalho
+```{r}
+head(df_receita_fonte)
+```
+
+```{r}
+receita_fonte <- data.frame(df_receita_fonte) %>%
+  filter(fonte == "CITRAN")
+```
+
+Valor pago pelo dia da autuação
+```{r}
+ggplot(receita_fonte, aes(x = data, y = valor_arrecadacao)) +
+  geom_line() +
+  labs(
+    title = "Arecadação por mês",
+    x = "Data",
+    y = "Valor arrecadado"
+  ) +
+  theme_minimal() # Opcional: um tema minimalista para o gráfico
+```
+
+Série temporal arrecadação mensal com frequência 12
+```{r}
+ts_receita_fonte <- ts(receita_fonte$valor_arrecadacao, frequency=12)
+```
+
+Decomposição da arrecadação mensal
+```{r}
+decomposicao_arrecadacao_mensal <- decompose(ts_receita_fonte)
+plot(decomposicao_arrecadacao_mensal)
+```
