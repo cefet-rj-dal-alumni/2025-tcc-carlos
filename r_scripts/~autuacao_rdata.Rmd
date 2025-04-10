@@ -1,0 +1,6 @@
+# Load 2022 data
+```{r}
+path <- "../../dados/autuacoes_9var_2022.Rdata"
+df_autuacao <- load(path)
+```
+
