@@ -1,6 +1,12 @@
-# Load 2022 data
+# Load R data
+
 ```{r}
-path <- "../../dados/autuacoes_9var_2022.Rdata"
+path <- "../../dados/autuacoes_9var_full.Rdata"
 df_autuacao <- load(path)
 ```
 
+# Salvar R data
+
+```{r}
+save(df_autuacao, file = "../../dados/autuacoes_9var_full.Rdata")
+```

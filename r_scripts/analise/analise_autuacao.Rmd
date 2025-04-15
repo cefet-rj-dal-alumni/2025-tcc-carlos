@@ -6,15 +6,21 @@ library(readr)
 library(lubridate)
 library(dplyr)
 library(ggplot2)
+library(zoo) 
 ```
 
-#Cabeçalho
+```{r}
+df <- data.frame(df_autuacao)
+```
+
+Cabeçalho
 
 ```{r}
 head(df)
 ```
 
-tornar data do df realmente uma data
+tornar data do df do tipo data
+
 ```{r}
 df <- df %>%
   mutate(
@@ -23,20 +29,109 @@ df <- df %>%
   )
 ```
 
+ordena, agrupa e soma por data_pagamento retira os NA e 0.0 retorna somente data_pagamento e valor_pago_total calcula a media do tempo de pagamento do dia (data_pagamento, valor_pago_total, media_tempo_pagamento)
 
-ordena, agrupa e soma por data_pagamento retira os NA e 0.0 retorna somente data_pagamento e valor_pago_total
-calcula a media do tempo de pagamento do dia
-(data_pagamento, valor_pago_total, media_tempo_pagamento)
 ```{r}
-#df_ordenado_valor_pago_total <- df %>%
-#  arrange(data_pagamento) %>%
-#  filter(!is.na(valor_pago) & valor_pago > 0.0) %>%
-#  group_by(data_pagamento) %>%
-#  summarise(valor_pago_total = sum(valor_pago, na.rm = TRUE)) %>%
-#  select(data_pagamento, valor_pago_total)  
-
 df_ordenado_valor_pago_total <- df %>%
-  filter(!is.na(valor_pago) & valor_pago > 0.0) %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2014-01-01" &
+    data_pagamento < "2026-01-01") %>%
+  mutate(
+    tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
+  ) %>%
+  group_by(data_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE),
+    media_tempo_pagamento = mean(tempo_pagamento, na.rm = TRUE)
+  ) %>%
+  select(data_pagamento, valor_pago_total, media_tempo_pagamento)  
+
+df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
+
+
+```
+
+```{r}
+limite_superior <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.75, na.rm = TRUE)
+
+limite_inferior <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.25, na.rm = TRUE)
+limite_superior
+```
+
+Valor total pago por dia (data pagamento)\
+valores muito baixos sao, provavelmente, feriados e finais de semana
+
+```{r}
+
+# Plot com group = 1 e pontos
+ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = valor_pago_total)) +
+  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
+  labs(
+    title = "Valor do Pagamento por Dia",
+    x = "Dia do Pagamento",
+    y = "Valor Total Pago (R$)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+media movel
+
+```{r}
+df_tratado <- df_ordenado_valor_pago_total %>%
+  mutate(
+    valor_suavizado = rollapply(
+      valor_pago_total, 
+      width = 21,  # Tamanho da janela (k)
+      FUN = mean,  # Função a aplicar (média)
+      fill = NA,   # Preenche bordas com NA
+      align = "center",
+      na.rm = TRUE  # Ignora NAs nos cálculos
+    )
+  )
+```
+
+grafico media movel
+
+```{r}
+
+# Plot com group = 1 e pontos
+ggplot(df_receita_diaria_media_movel, aes(x = data_pagamento, y = valor_suavizado)) +
+  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
+  labs(
+    title = "Valor do Pagamento por Dia",
+    x = "Data do Pagamento",
+    y = "Média da receita diário"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+media tempo pagamento
+
+```{r}
+
+# Plot com group = 1 e pontos
+ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = media_tempo_pagamento)) +
+  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
+  labs(
+    title = "Média do tempo de agamento em dias",
+    x = "Dia do Pagamento",
+    y = "Média do tempo de pagamento (dias)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+df_ordenado_valor_pago_total_mes <- df %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2014-01-01" &
+    data_pagamento < "2026-01-01") %>%
   mutate(
     tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
   ) %>%
@@ -51,21 +146,6 @@ df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_to
 ```
 
 ```{r}
-
-
-# Plot com group = 1 e pontos
-ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = valor_pago_total)) +
-  geom_line(group = 1, color = "steelblue", linewidth = 0.5) +  # Força a linha
-  labs(
-    title = "Valor do Pagamento por Dia",
-    x = "Dia do Pagamento",
-    y = "Valor Total Pago (R$)"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-```{r}
 # Criar dataframe com valor_pago_mensal
 df_mensal <- df_ordenado_valor_pago_total %>%
   mutate(
@@ -74,7 +154,7 @@ df_mensal <- df_ordenado_valor_pago_total %>%
   group_by(ano_mes) %>%  # Agrupa por mês
   summarise(
     valor_pago_mensal = sum(valor_pago_total, na.rm = TRUE),  # Soma os valores do mês
-    media_tempo_pagamento = mean(media_tempo_pagamento)
+    media_tempo_pagamento = mean(tempo_pagamento, na.rm = TRUE)
   ) %>%
   rename(data_pagamento = ano_mes)  # Renomeia para manter o padrão
 
@@ -101,6 +181,7 @@ ggplot(df_mensal, aes(x = data_pagamento, y = valor_pago_mensal)) +
 ```
 
 media de atraso por mes 2022
+
 ```{r}
 ggplot(df_mensal, aes(x = data_pagamento, y = media_tempo_pagamento)) +
   geom_col(fill = "steelblue", width = 15) +  # Barras com largura ajustável
@@ -117,4 +198,3 @@ ggplot(df_mensal, aes(x = data_pagamento, y = media_tempo_pagamento)) +
     plot.title = element_text(hjust = 0.5)
   )
 ```
-

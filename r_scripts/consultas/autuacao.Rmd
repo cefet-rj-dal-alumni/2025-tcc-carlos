@@ -6,6 +6,7 @@ library(bigrquery)
 
 #Obter 2022 a 2023
 ```{r}
+project_id <- 'rj-smtr'
 sql_query <- '
 SELECT  data,
         status_infracao,
@@ -17,9 +18,8 @@ SELECT  data,
         descricao_situacao_autuacao,
         tipo_veiculo 
 FROM `rj-smtr.transito.autuacao` 
-WHERE data >= "2022-01-01" AND data < "2023-01-01" 
-ORDER BY data ASC
-LIMIT 10'
+WHERE data >= "2019-01-01" AND data < "2020-01-01" 
+ORDER BY data ASC'
 ```
 
 #Executar
