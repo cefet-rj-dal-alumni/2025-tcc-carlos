@@ -1,10 +1,20 @@
-#Lib
+Biblioteca
+
 ```{r}
 library(bigrquery)
 
 ```
 
-#Obter 2022 a 2023
+Consulta 1: Seleciona todas as autuações\
+data\
+status_infracao\
+valor_pago\
+especie_veiculo\
+data_pagamento\
+data_limite_recurso\
+descricao_autuacao\
+tipo_veiculo
+
 ```{r}
 project_id <- 'rj-smtr'
 sql_query <- '
@@ -14,19 +24,16 @@ SELECT  data,
         especie_veiculo,
         data_pagamento,
         data_limite_recurso,
-        data_pagamento,
         descricao_situacao_autuacao,
         tipo_veiculo 
-FROM `rj-smtr.transito.autuacao` 
-WHERE data >= "2019-01-01" AND data < "2020-01-01" 
+FROM `rj-smtr.transito.autuacao`
 ORDER BY data ASC'
 ```
 
-#Executar
+Retorna o resultado da consulta\
+df_autuacao: resultado da consulta 1
+
 ```{r}
 results <- bq_project_query(project_id, sql_query) 
 df_autuacao <- bq_table_download(results)
 ```
-
-
-

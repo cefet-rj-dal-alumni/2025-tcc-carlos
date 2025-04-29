@@ -1,7 +1,7 @@
 # Load R data
 
 ```{r}
-path <- "../../dados/autuacoes_9var_full.Rdata"
+path <- "~/dados/autuacoes_9var_full.Rdata"
 df_autuacao <- load(path)
 ```
 

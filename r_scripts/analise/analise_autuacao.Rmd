@@ -1,4 +1,4 @@
-#Dependências
+### Dependências
 
 ```{r}
 library(daltoolbox)
@@ -7,29 +7,39 @@ library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(zoo) 
+
+
 ```
+
+## Processamento
+
+### Infrações diárias
+
+-   **df_autuacao:** dataframe com as observações diárias das infrações de trânsito
+
+    (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
 df <- data.frame(df_autuacao)
-```
 
-Cabeçalho
+# Converte o tipo das datas
+df <- df %>%
+  mutate(
+    data = as.Date(data) 
+  )
+```
 
 ```{r}
 head(df)
 ```
 
-tornar data do df do tipo data
+Filtra as ocorrências com valor útil\
+Agrupa pelo dia de pagamento\
+(o filtro da data é por conta de ruídos)
 
-```{r}
-df <- df %>%
-  mutate(
-    data_pagamento = as.Date(data_pagamento),  # Converte para Date
-    data = as.Date(data)  # Converte para Date
-  )
-```
+-   **valor_pago_total:** soma das multas pagas do
 
-ordena, agrupa e soma por data_pagamento retira os NA e 0.0 retorna somente data_pagamento e valor_pago_total calcula a media do tempo de pagamento do dia (data_pagamento, valor_pago_total, media_tempo_pagamento)
+-   **media_tempo_pagamento:** média do tempo de pagamento em dias\
 
 ```{r}
 df_ordenado_valor_pago_total <- df %>%
@@ -51,9 +61,7 @@ df_ordenado_valor_pago_total <- df %>%
 df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
 
 
-```
 
-```         
 ```
 
 Valor total pago por dia (data pagamento)\
@@ -63,7 +71,7 @@ valores muito baixos sao, provavelmente, feriados e finais de semana
 
 # Plot com group = 1 e pontos
 ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = valor_pago_total)) +
-  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
+  geom_line(group = 1, color = "black", linewidth = 0.2) +  # Força a linha
   labs(
     title = "Valor da receita por Dia",
     x = "Dia do Pagamento",
@@ -73,48 +81,14 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = valor_pago_tota
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-\
-Removendo outliers superiores (com base no percentil)
+### media movel (k=7, align=center)
 
 ```{r}
-limite_superior <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.80, na.rm = TRUE)
-
-media <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.25, na.rm = TRUE)
-
-```
-
-Outliers recebem a média total como valor
-
-```{r}
-df_receita_por_dia_sem_outliers <- df_ordenado_valor_pago_total %>%
-  mutate(
-    valor_pago_total = ifelse(valor_pago_total > limite_superior, media, valor_pago_total)
-  )
-
-df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
-
-```
-
-```{r}
-ggplot(df_receita_por_dia_sem_outliers, aes(x = data_pagamento, y = valor_pago_total)) +
-  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
-  labs(
-    title = "Valor da receita por Dia",
-    x = "Dia do Pagamento",
-    y = "Valor Total Pago (R$)"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-media movel
-
-```{r}
-df_sem_outlier_suavizado <- df_receita_por_dia_sem_outliers %>%
+df_suavizado <- df_ordenado_valor_pago_total %>%
   mutate(
     valor_suavizado = rollmean(
       valor_pago_total,
-      k = 30,          
+      k = 7,          
       fill = NA,       
       align = "center",
       na.rm = TRUE     
@@ -122,9 +96,11 @@ df_sem_outlier_suavizado <- df_receita_por_dia_sem_outliers %>%
   )
 ```
 
+Plot suavizado com média móvel
+
 ```{r}
-ggplot(df_sem_outlier_suavizado, aes(x = data_pagamento, y = valor_suavizado)) +
-  geom_line(group = 1, color = "steelblue", linewidth = 0.4) +  # Força a linha
+ggplot(df_suavizado, aes(x = data_pagamento, y = valor_suavizado)) +
+  geom_line(group = 1, color = "black", linewidth = 0.4) +  # Força a linha
   labs(
     title = "Valor da receita por Dia Suavizado",
     x = "Dia do Pagamento",
@@ -135,9 +111,21 @@ ggplot(df_sem_outlier_suavizado, aes(x = data_pagamento, y = valor_suavizado)) +
 ```
 
 ```{r}
+ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = media_tempo_pagamento)) +
+  geom_line(group = 1, color = "#992222", linewidth = 0.4) +  # Força a linha
+  labs(
+    title = "Média do tempo de pagamento",
+    x = "Dia do Pagamento",
+    y = "Tempo médio(dias)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
 
 ggplot(df_ordenado_valor_pago_total, aes(y = valor_pago_total)) +
-  geom_boxplot(fill = "steelblue", color = "black") +
+  geom_boxplot(fill = "#666666", color = "black") +
   labs(
     title = "Distribuição do Valor Pago Total",
     y = "Valor Pago (R$)"
@@ -149,16 +137,13 @@ grafico media movel
 
 ```{r}
 
-# Plot com group = 1 e pontos
-ggplot(df_receita_diaria_media_movel, aes(x = data_pagamento, y = valor_suavizado)) +
-  geom_line(group = 1, color = "steelblue", linewidth = 0.2) +  # Força a linha
+ggplot(df_sem_outlier_suavizado, aes(y = valor_suavizado)) +
+  geom_boxplot(fill = "#666666", color = "black") +
   labs(
-    title = "Valor do Pagamento por Dia",
-    x = "Data do Pagamento",
-    y = "Média da receita diário"
+    title = "Distribuição do Valor Pago Total - Suavizado",
+    y = "Valor Pago (R$)"
   ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme_minimal()
 ```
 
 media tempo pagamento
@@ -249,4 +234,39 @@ ggplot(df_mensal, aes(x = data_pagamento, y = media_tempo_pagamento)) +
     axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(hjust = 0.5)
   )
+```
+
+### Outliers
+
+Removendo outliers superiores (com base no percentil)
+
+```{r}
+limite_superior <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.80, na.rm = TRUE)
+
+media <- quantile(df_ordenado_valor_pago_total$valor_pago_total, probs = 0.25, na.rm = TRUE)
+
+```
+
+Outliers recebem a média total como valor
+
+```{r}
+df_receita_por_dia_sem_outliers <- df_ordenado_valor_pago_total %>%
+  mutate(
+    valor_pago_total = ifelse(valor_pago_total > limite_superior, media, valor_pago_total)
+  )
+
+df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
+
+```
+
+```{r}
+ggplot(df_receita_por_dia_sem_outliers, aes(x = data_pagamento, y = valor_pago_total)) +
+  geom_line(group = 1, color = "black", linewidth = 0.2) +  # Força a linha
+  labs(
+    title = "Valor da receita por Dia",
+    x = "Dia do Pagamento",
+    y = "Valor Total Pago (R$)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
