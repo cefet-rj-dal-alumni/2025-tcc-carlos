@@ -73,7 +73,7 @@ df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_to
 transformar em st
 
 ```{r}
-ts_valor_pago_total_dia <- ts_data(df_ordenado_valor_pago_total$valor_pago_total, 10)
+ts_valor_pago_total_dia <- ts_data(df_ordenado_valor_pago_total$valor_pago_total, 7)
 
 
 ```
@@ -92,10 +92,10 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
-preproc <- ts_norm_an()
+preproc <- ts_norm_ean()
 
 #treinamento modelo
-model <- ts_knn(preproc, input_size=4, k=32)
+model <- ts_knn(preproc, input_size=2, k=4)
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste

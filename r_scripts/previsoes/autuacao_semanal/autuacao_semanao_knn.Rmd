@@ -1,5 +1,5 @@
 ---
-title: "previsao_autuacao_mensal_knn"
+title: "autuacao_semanao_knn"
 output: html_document
 ---
 
@@ -39,29 +39,29 @@ df <- df %>%
 head(df)
 ```
 
-## Agrupamento por mês
+## Agrupamento por semana
 
 Filtra as ocorrências com valor útil\
 Agrupa pelo dia de pagamento\
 (o filtro da data é por conta de ruídos)
 
--   **valor_pago_total:** soma das multas pagas no mês\
+-   **valor_pago_total:** soma das multas pagas no mes
 
 ```{r}
-df_ordenado_valor_pago_total_mes <- df %>%
+df_ordenado_valor_pago_total_semana <- df %>%
   filter(
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2014-01-01" &
     data_pagamento < "2025-01-01") %>%
   mutate(
-    mes_pagamento = floor_date(data_pagamento, "month")
+    semana_pagamento = floor_date(data_pagamento, "week")
   ) %>%
-  group_by(mes_pagamento) %>%
+  group_by(semana_pagamento) %>%
   summarise(
     valor_pago_total = sum(valor_pago, na.rm = TRUE)
   ) %>%
-  select(mes_pagamento, valor_pago_total)  
+  select(semana_pagamento, valor_pago_total)  
 
 df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
 ```
@@ -71,7 +71,7 @@ df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago
 transformar em st
 
 ```{r}
-ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, 6)
+ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_semana$valor_pago_total,7)
 
 
 ```
@@ -80,7 +80,7 @@ separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_mes, test_size = 12)
+samp <- ts_sample(ts_valor_pago_total_semana, test_size = 36)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -90,7 +90,7 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
-preproc <- ts_norm_gminmax()
+preproc <- ts_norm_diff()
 
 #treinamento modelo
 model <- ts_knn(preproc, input_size=2, k=4)
@@ -123,10 +123,4 @@ plot
 yvalues <- c(io_train$output, io_test$output)
 
 plot_ts_pred(y=yvalues, yadj=adjust, ypre=prediction) + theme(text = element_text(size=14))
-```
-
-```         
-```
-
-```         
 ```

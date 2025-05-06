@@ -71,7 +71,7 @@ df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago
 transformar em st
 
 ```{r}
-ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_semana$valor_pago_total, 0)
+ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_semana$valor_pago_total, 7)
 
 
 ```
@@ -80,7 +80,7 @@ separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_semana, test_size = 12)
+samp <- ts_sample(ts_valor_pago_total_semana, test_size = 36)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -90,8 +90,10 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
+preproc <- ts_norm_diff()
+
 #treinamento modelo
-model <- ts_arima()
+model <- ts_mlp(preproc, input_size=2, size=3, decay=0)
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste
