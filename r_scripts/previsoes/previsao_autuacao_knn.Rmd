@@ -54,7 +54,7 @@ df_ordenado_valor_pago_total <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2014-01-01" &
-    data_pagamento < "2026-01-01") %>%
+    data_pagamento < "2025-01-01") %>%
   mutate(
     tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
   ) %>%

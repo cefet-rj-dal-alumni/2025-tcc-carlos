@@ -1,5 +1,5 @@
 ---
-title: "previsao_autuacao_mlp"
+title: "previsao_autuacao_mensal_arima"
 output: html_document
 ---
 
@@ -25,6 +25,7 @@ library(zoo)
     (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
+#antes de rodar, lembrar de importar os data frame d_autuacao em ~/dados/autuacoes_9var_full_data
 df <- data.frame(df_autuacao)
 
 # Converte o tipo das datas
@@ -38,34 +39,31 @@ df <- df %>%
 head(df)
 ```
 
-## Agrupamento por dia
+## Agrupamento por mês
 
 Filtra as ocorrências com valor útil\
 Agrupa pelo dia de pagamento\
 (o filtro da data é por conta de ruídos)
 
--   **valor_pago_total:** soma das multas pagas do
-
--   **media_tempo_pagamento:** média do tempo de pagamento em dias\
+-   **valor_pago_total:** soma das multas pagas no mes
 
 ```{r}
-df_ordenado_valor_pago_total <- df %>%
+df_ordenado_valor_pago_total_mes <- df %>%
   filter(
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2014-01-01" &
     data_pagamento < "2025-01-01") %>%
   mutate(
-    tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
+    mes_pagamento = floor_date(data_pagamento, "month")
   ) %>%
-  group_by(data_pagamento) %>%
+  group_by(mes_pagamento) %>%
   summarise(
-    valor_pago_total = sum(valor_pago, na.rm = TRUE),
-    media_tempo_pagamento = mean(tempo_pagamento, na.rm = TRUE)
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
   ) %>%
-  select(data_pagamento, valor_pago_total, media_tempo_pagamento)  
+  select(mes_pagamento, valor_pago_total)  
 
-df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
+df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
 ```
 
 ### Previsao
@@ -73,7 +71,7 @@ df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_to
 transformar em st
 
 ```{r}
-ts_valor_pago_total_dia <- ts_data(df_ordenado_valor_pago_total$valor_pago_total, 15)
+ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, 0)
 
 
 ```
@@ -82,7 +80,7 @@ separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_dia, test_size = 30)
+samp <- ts_sample(ts_valor_pago_total_mes, test_size = 5)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -92,10 +90,8 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
-preproc <- ts_norm_diff()
-
 #treinamento modelo
-model <- ts_mlp(preproc, input_size=2, size=4, decay=0)
+model <- ts_arima()
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste

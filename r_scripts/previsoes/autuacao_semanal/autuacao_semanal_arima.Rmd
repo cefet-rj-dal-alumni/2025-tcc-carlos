@@ -1,0 +1,124 @@
+---
+title: "autuacao_semanal_arima"
+output: html_document
+---
+
+## Dependências
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo) 
+
+
+```
+
+## Processamento
+
+### Infrações diárias
+
+-   **df_autuacao:** dataframe com as observações diárias das infrações de trânsito
+
+    (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
+
+```{r}
+#antes de rodar, lembrar de importar os data frame d_autuacao em ~/dados/autuacoes_9var_full_data
+df <- data.frame(df_autuacao)
+
+# Converte o tipo das datas
+df <- df %>%
+  mutate(
+    data = as.Date(data) 
+  )
+```
+
+```{r}
+head(df)
+```
+
+## Agrupamento por semana
+
+Filtra as ocorrências com valor útil\
+Agrupa pelo dia de pagamento\
+(o filtro da data é por conta de ruídos)
+
+-   **valor_pago_total:** soma das multas pagas no mes
+
+```{r}
+df_ordenado_valor_pago_total_semana <- df %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2014-01-01" &
+    data_pagamento < "2025-01-01") %>%
+  mutate(
+    semana_pagamento = floor_date(data_pagamento, "week")
+  ) %>%
+  group_by(semana_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
+  ) %>%
+  select(semana_pagamento, valor_pago_total)  
+
+df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
+```
+
+### Previsao
+
+transformar em st
+
+```{r}
+ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, 0)
+
+
+```
+
+separação teste/treino
+
+```{r}
+
+samp <- ts_sample(ts_valor_pago_total_semana, test_size = 12)
+
+io_train <- ts_projection(samp$train)
+io_test <- ts_projection(samp$test)
+
+```
+
+modelo e ajuste
+
+```{r}
+#treinamento modelo
+model <- ts_arima()
+model <- fit(model, x=io_train$input, y=io_train$output)
+
+#ajuste
+adjust <- predict(model, io_train$input)
+adjust <- as.vector(adjust)
+output <- as.vector(io_train$output)
+ev_adjust <- evaluate(model, output, adjust)
+ev_adjust$mse
+```
+
+predição
+
+```{r}
+#prediçao
+prediction <- predict(model, x=io_test$input, steps_ahead=1)
+prediction <- as.vector(prediction)
+output <- as.vector(io_test$output)
+ev_test <- evaluate(model, output, prediction)
+ev_test
+
+
+```
+
+plot
+
+```{r}
+yvalues <- c(io_train$output, io_test$output)
+
+plot_ts_pred(y=yvalues, yadj=adjust, ypre=prediction) + theme(text = element_text(size=14))
+```
