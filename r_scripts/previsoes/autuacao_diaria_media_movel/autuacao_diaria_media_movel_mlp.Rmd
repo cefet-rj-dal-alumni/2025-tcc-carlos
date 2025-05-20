@@ -1,5 +1,5 @@
 ---
-title: "autuacao_diaria_media_movel_arima"
+title: "autuacao_diaria_media_movel_mlp"
 output: html_document
 ---
 
@@ -54,7 +54,7 @@ df_ordenado_valor_pago_total <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2014-01-01" &
-    data_pagamento < "2024-01-01") %>%
+    data_pagamento < "2025-01-01") %>%
   mutate(
     tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
   ) %>%
@@ -75,7 +75,7 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   mutate(
     valor_pago_suavizado = zoo::rollmean(
       valor_pago_total,
-      k = 14,
+      k = 3,
       fill = NA,
       na.rm = TRUE
     )
@@ -96,7 +96,7 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
 transformar em st
 
 ```{r}
-ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 0)
+ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 90)
 
 ```
 
@@ -104,7 +104,7 @@ separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 30)
+samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 90)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -113,8 +113,7 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
-#treinamento modelo
-model <- ts_arima()
+model <- ts_mlp(ts_norm_an(), input_size=2, size=4, decay=0)
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste
@@ -129,12 +128,19 @@ predição
 
 ```{r}
 #prediçao
-prediction <- predict(model, x=io_test$input, steps_ahead=1)
+steps_ahead <- 90
+io_test <- ts_projection(samp$test)
+prediction <- predict(model, x=io_test$input[1,], steps_ahead=steps_ahead)
 prediction <- as.vector(prediction)
+
 output <- as.vector(io_test$output)
+if (steps_ahead > 1)
+    output <- output[1:steps_ahead]
+
+#print(sprintf("%.2f, %.2f", output, prediction))
+
 ev_test <- evaluate(model, output, prediction)
 ev_test
-
 
 ```
 

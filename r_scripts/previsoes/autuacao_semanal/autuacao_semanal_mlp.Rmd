@@ -53,7 +53,7 @@ df_ordenado_valor_pago_total_semana <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2014-01-01" &
-    data_pagamento < "2025-01-01") %>%
+    data_pagamento < "2025-01-01") %>% #data da ocorrencia das autuações
   mutate(
     semana_pagamento = floor_date(data_pagamento, "week")
   ) %>%
@@ -61,9 +61,8 @@ df_ordenado_valor_pago_total_semana <- df %>%
   summarise(
     valor_pago_total = sum(valor_pago, na.rm = TRUE)
   ) %>%
-  select(semana_pagamento, valor_pago_total)  
-
-df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
+  filter(semana_pagamento < "2024-03-01") %>%  # Filtro adicional para garantir semanas antes de 2025
+  select(semana_pagamento, valor_pago_total)
 ```
 
 ### Previsao
@@ -80,7 +79,7 @@ separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_semana, test_size = 36)
+samp <- ts_sample(ts_valor_pago_total_semana, test_size = 7)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -108,7 +107,7 @@ predição
 
 ```{r}
 #prediçao
-prediction <- predict(model, x=io_test$input, steps_ahead=1)
+prediction <- predict(model, x=io_test$input[1,], steps_ahead=7)
 prediction <- as.vector(prediction)
 output <- as.vector(io_test$output)
 ev_test <- evaluate(model, output, prediction)

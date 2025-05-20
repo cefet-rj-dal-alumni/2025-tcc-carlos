@@ -1,5 +1,5 @@
 ---
-title: "autuacao_diaria_media_movel_arima"
+title: "autuacao_diaria_media_movel_lstm"
 output: html_document
 ---
 
@@ -75,7 +75,7 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   mutate(
     valor_pago_suavizado = zoo::rollmean(
       valor_pago_total,
-      k = 14,
+      k = 3,
       fill = NA,
       na.rm = TRUE
     )
@@ -96,7 +96,7 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
 transformar em st
 
 ```{r}
-ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 0)
+ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 30)
 
 ```
 
@@ -113,8 +113,7 @@ io_test <- ts_projection(samp$test)
 modelo e ajuste
 
 ```{r}
-#treinamento modelo
-model <- ts_arima()
+model <- ts_lstm(ts_norm_an(), input_size=2, epochs=10000)
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste
@@ -129,12 +128,19 @@ predição
 
 ```{r}
 #prediçao
-prediction <- predict(model, x=io_test$input, steps_ahead=1)
+steps_ahead <- 30
+io_test <- ts_projection(samp$test)
+prediction <- predict(model, x=io_test$input[1,], steps_ahead=steps_ahead)
 prediction <- as.vector(prediction)
+
 output <- as.vector(io_test$output)
+if (steps_ahead > 1)
+    output <- output[1:steps_ahead]
+
+#print(sprintf("%.2f, %.2f", output, prediction))
+
 ev_test <- evaluate(model, output, prediction)
 ev_test
-
 
 ```
 
