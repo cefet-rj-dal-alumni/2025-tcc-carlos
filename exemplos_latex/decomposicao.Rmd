@@ -1,0 +1,70 @@
+---
+title: "decomposicao"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forecast)
+
+set.seed(123) # Para reprodução
+
+# Criar série temporal sintética com 100 observações
+tempo <- 1:100
+tendencia <- 0.5 * tempo
+sazonalidade <- 10 * sin(2 * pi * tempo / 12) # Sazonalidade anual (12 períodos)
+ruido <- rnorm(100, mean = 0, sd = 3)
+
+# Série temporal completa
+serie_completa <- ts(tendencia + sazonalidade + ruido, frequency = 12, start = c(2010, 1))
+
+# Decompor a série temporal
+decomposicao <- stl(serie_completa, s.window = "periodic")
+
+# Extrair componentes
+componentes <- as.data.frame(decomposicao$time.series)
+componentes$time <- time(serie_completa)
+componentes$"Série temporal (a)" <- serie_completa
+
+# Renomear colunas para os labels desejados
+componentes <- componentes %>%
+  rename(
+    "Tendência (b)" = trend,
+    "Sazonalidade (c)" = seasonal,
+    "Ruído (d)" = remainder
+  )
+
+# Transformar para formato longo para o ggplot
+df_plot <- componentes %>%
+  pivot_longer(
+    cols = c("Série temporal (a)", "Tendência (b)", "Sazonalidade (c)", "Ruído (d)"),
+    names_to = "componente",
+    values_to = "valor"
+  ) %>%
+  mutate(
+    componente = factor(componente, levels = c("Série temporal (a)", "Tendência (b)", 
+                                              "Sazonalidade (c)", "Ruído (d)"))
+  )
+
+# Criar o gráfico com labels abaixo de cada painel
+ggplot(df_plot, aes(x = time, y = valor)) +
+  geom_line() +
+  facet_wrap(~ componente, scales = "free_y", ncol = 1, 
+             strip.position = "bottom",  # Labels abaixo de cada painel
+             labeller = labeller(componente = label_value)) +
+  labs(
+    title = "Decomposição da Série Temporal Sintética",
+    x = "Tempo",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 10, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.spacing = unit(1, "lines")  # Espaço entre os painéis
+  )
+```
+
