@@ -83,8 +83,8 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   filter(!is.na(valor_pago_suavizado))  # Works without tidyr
 
 ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
-    geom_point(aes(y = valor_pago_total), color = "gray", alpha = 0.5) +
-    geom_line(aes(y = valor_pago_suavizado), color = "blue", linewidth = 1) +
+    geom_line(aes(y = valor_pago_total), color = "gray", alpha = 0.7) +
+    geom_line(aes(y = valor_pago_suavizado), color = "black", linewidth = 1) +
     labs(title = "Valor Pago Total com Suavização",
          x = "Data de Pagamento",
          y = "Valor Pago") +
