@@ -25,14 +25,9 @@ library(zoo)
     (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
-#antes de rodar, lembrar de importar os data frame d_autuacao em ~/dados/autuacoes_9var_full_data
-df <- data.frame(df_autuacao)
-
-# Converte o tipo das datas
-df <- df %>%
-  mutate(
-    data = as.Date(data) 
-  )
+if (!exists("df") || is.null(df)) {
+  df <- data.frame(df_autuacao)
+}
 ```
 
 ```{r}

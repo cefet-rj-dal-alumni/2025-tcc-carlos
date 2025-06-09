@@ -13,10 +13,9 @@ library(dplyr)
 library(ggplot2)
 library(zoo) 
 
-
 ```
 
-## Processamento
+## Obtenção dos dados
 
 ### Infrações diárias
 
@@ -25,20 +24,34 @@ library(zoo)
     (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
-df <- data.frame(df_autuacao)
+if (!exists("df") || is.null(df)) {
+  df <- data.frame(df_autuacao)
+}
 
-# Converte o tipo das datas
-df <- df %>%
-  mutate(
-    data = as.Date(data) 
-  )
 ```
 
 ```{r}
 head(df)
 ```
 
-## Agrupamento por dia
+## Pré-processamento
+
+```{r}
+df_ordenado_valor_pago_total <- df %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2016-01-01" &
+    data_pagamento < "2025-01-01") %>%
+  mutate(
+    data = as.Date(data),
+    tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
+  ) 
+```
+
+## Processamento
+
+### Agrupamento por dia
 
 Filtra as ocorrências com valor útil\
 Agrupa pelo dia de pagamento\
@@ -49,15 +62,7 @@ Agrupa pelo dia de pagamento\
 -   **media_tempo_pagamento:** média do tempo de pagamento em dias\
 
 ```{r}
-df_ordenado_valor_pago_total <- df %>%
-  filter(
-    !is.na(valor_pago) &
-    valor_pago > 0.0 &
-    data_pagamento > "2014-01-01" &
-    data_pagamento < "2024-01-01") %>%
-  mutate(
-    tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
-  ) %>%
+df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   group_by(data_pagamento) %>%
   summarise(
     valor_pago_total = sum(valor_pago, na.rm = TRUE),
@@ -66,21 +71,22 @@ df_ordenado_valor_pago_total <- df %>%
   select(data_pagamento, valor_pago_total, media_tempo_pagamento)  
 
 df_ordenado_valor_pago_total$data_pagamento <- as.Date(df_ordenado_valor_pago_total$data_pagamento)
+
 ```
 
-## Média móvel
+### Média móvel
 
 ```{r}
 df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   mutate(
     valor_pago_suavizado = zoo::rollmean(
       valor_pago_total,
-      k = 14,
+      k = 30,
       fill = NA,
       na.rm = TRUE
     )
   ) %>%
-  filter(!is.na(valor_pago_suavizado))  # Works without tidyr
+  filter(!is.na(valor_pago_suavizado))
 
 ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
     geom_line(aes(y = valor_pago_total), color = "gray", alpha = 0.7) +
@@ -91,26 +97,23 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
     theme_minimal()
 ```
 
-### Previsao
-
-transformar em st
+### Transformar em ST
 
 ```{r}
 ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 0)
 
 ```
 
-separação teste/treino
+## Separação teste/treino
 
 ```{r}
-
 samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 30)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
 ```
 
-modelo e ajuste
+## Ajuste dos parâmetros
 
 ```{r}
 #treinamento modelo
@@ -122,14 +125,14 @@ adjust <- predict(model, io_train$input)
 adjust <- as.vector(adjust)
 output <- as.vector(io_train$output)
 ev_adjust <- evaluate(model, output, adjust)
-ev_adjust$mse
+#ev_adjust$mse
 ```
 
-predição
+## Predição
 
 ```{r}
 #prediçao
-prediction <- predict(model, x=io_test$input, steps_ahead=1)
+prediction <- predict(model, x=io_test$input, steps_ahead=length(io_test$input))
 prediction <- as.vector(prediction)
 output <- as.vector(io_test$output)
 ev_test <- evaluate(model, output, prediction)
@@ -138,7 +141,7 @@ ev_test
 
 ```
 
-plot
+## Análise
 
 ```{r}
 yvalues <- c(io_train$output, io_test$output)

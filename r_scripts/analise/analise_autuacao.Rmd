@@ -69,11 +69,26 @@ valores muito baixos sao, provavelmente, feriados e finais de semana
 
 ```{r}
 
-# Plot com group = 1 e pontos
+library(ggplot2)
+
+# Supondo que 'df_ordenado_valor_pago_total' já esteja carregado
+# 1. Encontrar as datas de início, fim, e os limites de 3 meses
+primeira_data <- min(df_ordenado_valor_pago_total$data_pagamento)
+ultima_data <- max(df_ordenado_valor_pago_total$data_pagamento)
+
+inicio_corte <- primeira_data %m+% months(12)  # 3 meses após o início
+fim_corte <- ultima_data %m-% months(6)       # 3 meses antes do fim
+
+# 2. Plot com linhas verticais
 ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento, y = valor_pago_total)) +
-  geom_line(group = 1, color = "black", linewidth = 0.2) +  # Força a linha
+  geom_line(group = 1, color = "black", linewidth = 0.2) +
+  geom_vline(xintercept = as.numeric(inicio_corte), 
+             color = "black", linetype = "dashed", linewidth = 0.5) +
+#  geom_vline(xintercept = as.numeric(fim_corte), 
+#             color = "black", linetype = "dashed", linewidth = 0.5) +
   labs(
     title = "Valor da receita por Dia",
+    subtitle = "Linha tracejada: limite do corte da série temporal",
     x = "Dia do Pagamento",
     y = "Valor Total Pago (R$)"
   ) +
