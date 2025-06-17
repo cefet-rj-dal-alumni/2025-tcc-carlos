@@ -1,5 +1,5 @@
 ---
-title: "autuacao_semanal_arima"
+title: "autuacao_quinzenal_arima"
 output: html_document
 ---
 
@@ -33,7 +33,7 @@ head(df)
 ## Pré-processamento
 
 ```{r}
-df_ordenado_valor_pago_total_semana <- df %>%
+df_ordenado_valor_pago_total_quinzena <- df %>%
   filter(
     !is.na(valor_pago) &
     valor_pago > 0.0 &
@@ -50,30 +50,34 @@ df_ordenado_valor_pago_total_semana <- df %>%
 data_pagamento
 
 ```{r}
-df_ordenado_valor_pago_total_semana <- df_ordenado_valor_pago_total_semana %>%
+df_ordenado_valor_pago_total_quinzena <- df_ordenado_valor_pago_total_quinzena %>%
   mutate(
-    semana_pagamento = floor_date(data_pagamento, "week")
+    quinzena_pagamento = if_else(
+      day(data_pagamento) <= 15,
+      floor_date(data_pagamento, "month"),
+      floor_date(data_pagamento, "month") + days(15)
+    )
   ) %>%
-  group_by(semana_pagamento) %>%
+  group_by(quinzena_pagamento) %>%
   summarise(
     valor_pago_total = sum(valor_pago, na.rm = TRUE)
-  ) %>%
-  select(semana_pagamento, valor_pago_total) 
+  )
 
-df_ordenado_valor_pago_total_semana$semana_pagamento <- as.Date(df_ordenado_valor_pago_total_semana$semana_pagamento)
+
+df_ordenado_valor_pago_total_quinzena$quinzena_pagamento <- as.Date(df_ordenado_valor_pago_total_quinzena$quinzena_pagamento)
 ```
 
 transformar em st
 
 ```{r}
-ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_semana$valor_pago_total, 0)
+ts_valor_pago_total_quinzena <- ts_data(df_ordenado_valor_pago_total_quinzena$valor_pago_total, 0)
 ```
 
 ## Separação teste/treino
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_semana, test_size = 36)
+samp <- ts_sample(ts_valor_pago_total_quinzena, test_size = 21)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)

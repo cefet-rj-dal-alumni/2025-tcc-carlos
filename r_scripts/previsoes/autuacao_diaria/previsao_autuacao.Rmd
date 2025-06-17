@@ -148,7 +148,7 @@ df_mensal$data_pagamento <- as.Date(df_mensal$data_pagamento)
 ggplot(df_mensal, aes(x = data_pagamento, y = valor_pago_mensal)) +
   geom_line(group = 1, color = "steelblue", linewidth = 0.5) +  # Força a linha
   labs(
-    title = "Valor do Pagamento por MEs",
+    title = "Valor do Pagamento por MES",
     x = "Dia do Pagamento",
     y = "Valor Total Pago (R$)"
   ) +
