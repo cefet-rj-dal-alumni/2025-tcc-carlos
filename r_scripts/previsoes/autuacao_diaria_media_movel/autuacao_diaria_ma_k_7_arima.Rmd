@@ -24,7 +24,7 @@ library(zoo)
     (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
-if (!exists("df") || is.null(df)) {
+if (!exists("df") || is.null(df) || is.function(df)) {
   df <- data.frame(df_autuacao)
 }
 
@@ -101,13 +101,14 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
 
 ```{r}
 ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 0)
+ts_data <- df_ordenado_valor_pago_total$data_pagamento
 
 ```
 
 ## Separação teste/treino
 
 ```{r}
-samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 30)
+samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 90)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -147,4 +148,40 @@ ev_test
 yvalues <- c(io_train$output, io_test$output)
 
 plot_ts_pred(y=yvalues, yadj=adjust, ypre=prediction) + theme(text = element_text(size=14))
+
+plot_data <- data.frame(
+  data = ts_data,  
+  yvalues = yvalues,
+  adjust = c(adjust, rep(NA, length(yvalues) - length(adjust))),
+  prediction = c(rep(NA, length(yvalues) - length(prediction)), prediction)
+)
+
+data_inicio <- as.Date("2016-01-01")
+data_fim <- as.Date("2025-01-01")
+
+ggplot(plot_data, aes(x = data)) +
+  geom_point(aes(y = yvalues), color = "#999") +
+  geom_line(aes(y = yvalues), color = "#555") + 
+  
+  geom_line(aes(y = adjust), color = "blue", linetype = "dashed") +
+  geom_line(aes(y = prediction), color = "green", linetype = "dashed") +
+  scale_linetype_manual(
+    name = "Legenda",
+    values = c("solid", "dashed", "dashed"),
+    labels = c("Valores Reais", "Valores Ajustados", "Previsões")
+  ) +
+  labs(title = "Série Temporal de Receitas",
+       x = "Período", y = "Valor Total Pago") +
+  theme_minimal() +
+  coord_cartesian(xlim = c(data_inicio, data_fim)) +
+  guides(color = "none")
+```
+
+## Tamanhos
+```{r}
+cat("Tamanhos:", "\n",
+    "Série:", length(yvalues), "\n",
+    "Teste:", length(io_test$input), "\n",
+    "Steps Ahead:", length(prediction), "\n",
+    "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n")
 ```

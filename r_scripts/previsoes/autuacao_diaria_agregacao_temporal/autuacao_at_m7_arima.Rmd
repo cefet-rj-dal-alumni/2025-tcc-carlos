@@ -21,7 +21,7 @@ library(zoo)
     (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
 
 ```{r}
-if (!exists("df") || is.null(df)) {
+if (!exists("df") || is.null(df) || is.function(df)) {
   df <- data.frame(df_autuacao)
 }
 ```
@@ -38,7 +38,7 @@ df_ordenado_valor_pago_total_semana <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2016-01-01" &
-    data_pagamento < "2025-01-01") %>%
+    data_pagamento < "2025-01-01"  ) %>%
   mutate(
     data = as.Date(data)
   ) 
@@ -52,7 +52,7 @@ data_pagamento
 ```{r}
 df_ordenado_valor_pago_total_semana <- df_ordenado_valor_pago_total_semana %>%
   mutate(
-    semana_pagamento = floor_date(data_pagamento, "week")
+    semana_pagamento = floor_date(data_pagamento, "week")#ajustar pra nao ficar a ultima semana com dias faltantes
   ) %>%
   group_by(semana_pagamento) %>%
   summarise(
@@ -61,12 +61,15 @@ df_ordenado_valor_pago_total_semana <- df_ordenado_valor_pago_total_semana %>%
   select(semana_pagamento, valor_pago_total) 
 
 df_ordenado_valor_pago_total_semana$semana_pagamento <- as.Date(df_ordenado_valor_pago_total_semana$semana_pagamento)
+
+
 ```
 
 transformar em st
 
 ```{r}
 ts_valor_pago_total_semana <- ts_data(df_ordenado_valor_pago_total_semana$valor_pago_total, 0)
+ts_data <- df_ordenado_valor_pago_total_semana$semana_pagamento
 ```
 
 ## Separação teste/treino
@@ -107,10 +110,47 @@ ev_test
 
 ```
 
+
 ## Plot do gráfico
 
 ```{r}
 yvalues <- c(io_train$output, io_test$output)
 
 plot_ts_pred(y=yvalues, yadj=adjust, ypre=prediction) + theme(text = element_text(size=14))
+
+plot_data <- data.frame(
+  data = ts_data,  
+  yvalues = yvalues,
+  adjust = c(adjust, rep(NA, length(yvalues) - length(adjust))),
+  prediction = c(rep(NA, length(yvalues) - length(prediction)), prediction)
+)
+
+data_inicio <- as.Date("2016-01-01")
+data_fim <- as.Date("2025-01-01")
+
+ggplot(plot_data, aes(x = data)) +
+  geom_point(aes(y = yvalues), color = "#999") +
+  geom_line(aes(y = yvalues), color = "#555") + 
+  
+  geom_line(aes(y = adjust), color = "blue", linetype = "dashed") +
+  geom_line(aes(y = prediction), color = "green", linetype = "dashed") +
+  scale_linetype_manual(
+    name = "Legenda",
+    values = c("solid", "dashed", "dashed"),
+    labels = c("Valores Reais", "Valores Ajustados", "Previsões")
+  ) +
+  labs(title = "Série Temporal de Receitas",
+       x = "Período", y = "Valor Total Pago") +
+  theme_minimal() +
+  coord_cartesian(xlim = c(data_inicio, data_fim)) +
+  guides(color = "none")
+```
+
+
+## Tamanhos
+```{r}
+cat("Tamanhos:\nSérie:", length(yvalues), "\n",
+    "Teste:", length(io_test$input), "\n",
+    "Steps Ahead:", length(prediction), "\n",
+    "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n")
 ```
