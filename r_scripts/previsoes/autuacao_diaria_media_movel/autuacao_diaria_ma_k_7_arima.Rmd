@@ -42,7 +42,7 @@ df_ordenado_valor_pago_total <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2016-01-01" &
-    data_pagamento < "2025-01-01") %>%
+    data_pagamento < "2025-01-01" ) %>%
   mutate(
     data = as.Date(data),
     tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
@@ -83,7 +83,8 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
       valor_pago_total,
       k = 7,
       fill = NA,
-      na.rm = TRUE
+      na.rm = TRUE,
+      align = "right"
     )
   ) %>%
   filter(!is.na(valor_pago_suavizado))
@@ -156,7 +157,7 @@ plot_data <- data.frame(
   prediction = c(rep(NA, length(yvalues) - length(prediction)), prediction)
 )
 
-data_inicio <- as.Date("2016-01-01")
+data_inicio <- as.Date("2024-01-01")
 data_fim <- as.Date("2025-01-01")
 
 ggplot(plot_data, aes(x = data)) +
@@ -178,6 +179,7 @@ ggplot(plot_data, aes(x = data)) +
 ```
 
 ## Tamanhos
+
 ```{r}
 cat("Tamanhos:", "\n",
     "Série:", length(yvalues), "\n",

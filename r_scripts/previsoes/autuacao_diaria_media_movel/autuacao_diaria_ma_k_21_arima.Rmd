@@ -83,7 +83,8 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
       valor_pago_total,
       k = 21,
       fill = NA,
-      na.rm = TRUE
+      na.rm = TRUE,
+      align = "right"
     )
   ) %>%
   filter(!is.na(valor_pago_suavizado))
