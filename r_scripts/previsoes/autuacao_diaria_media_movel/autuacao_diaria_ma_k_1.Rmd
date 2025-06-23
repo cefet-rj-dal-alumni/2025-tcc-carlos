@@ -42,7 +42,7 @@ df_ordenado_valor_pago_total <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2016-01-01" &
-    data_pagamento < "2025-01-01" ) %>%
+    data_pagamento < "2025-01-01") %>%
   mutate(
     data = as.Date(data),
     tempo_pagamento = as.numeric(data_pagamento - data, units = "days")
@@ -81,7 +81,7 @@ df_ordenado_valor_pago_total <- df_ordenado_valor_pago_total %>%
   mutate(
     valor_pago_suavizado = zoo::rollmean(
       valor_pago_total,
-      k = 7,
+      k = 1,
       fill = NA,
       na.rm = TRUE,
       align = "right"
@@ -103,13 +103,12 @@ ggplot(df_ordenado_valor_pago_total, aes(x = data_pagamento)) +
 ```{r}
 ts_valor_pago_dia_suavizado <- ts_data(df_ordenado_valor_pago_total$valor_pago_suavizado, 0)
 ts_data <- df_ordenado_valor_pago_total$data_pagamento
-
 ```
 
 ## Separação teste/treino
 
 ```{r}
-samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 90)
+samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 180)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -127,7 +126,7 @@ adjust <- predict(model, io_train$input)
 adjust <- as.vector(adjust)
 output <- as.vector(io_train$output)
 ev_adjust <- evaluate(model, output, adjust)
-ev_adjust$mse
+#ev_adjust$mse
 ```
 
 ## Predição
@@ -157,7 +156,7 @@ plot_data <- data.frame(
   prediction = c(rep(NA, length(yvalues) - length(prediction)), prediction)
 )
 
-data_inicio <- as.Date("2024-01-01")
+data_inicio <- as.Date("2016-01-01")
 data_fim <- as.Date("2025-01-01")
 
 ggplot(plot_data, aes(x = data)) +
@@ -171,7 +170,7 @@ ggplot(plot_data, aes(x = data)) +
     values = c("solid", "dashed", "dashed"),
     labels = c("Valores Reais", "Valores Ajustados", "Previsões")
   ) +
-  labs(title = "Série Temporal de Receitas(Média Model - k = 7)",
+  labs(title = "Série Temporal de Receitas",
        x = "Período", y = "Valor Total Pago") +
   theme_minimal() +
   coord_cartesian(xlim = c(data_inicio, data_fim)) +

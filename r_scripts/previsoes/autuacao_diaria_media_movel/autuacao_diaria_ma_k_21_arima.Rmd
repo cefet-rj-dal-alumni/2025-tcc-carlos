@@ -185,3 +185,27 @@ cat("Tamanhos:", "\n",
     "Steps Ahead:", length(prediction), "\n",
     "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n")
 ```
+
+
+## Validação Cruzada
+```{r}
+TAMANHO_TESTE <- 90  # Prever 90 dias à frente (aprox. 3 meses)
+TAMANHO_TREINO <- 365 * 4 # Usar 4 anos de dados para treinar
+PASSO <- TAMANHO_TESTE # Janela não sobreposta, desliza pelo tamanho do teste
+
+
+resultados_cv <- validacao_cruzada_ts(
+  serie_temporal = df_ordenado_valor_pago_total$valor_pago_suavizado,
+  datas_ts = df_ordenado_valor_pago_total$data_pagamento,
+  tam_janela_treino = TAMANHO_TREINO,
+  tam_janela_teste = TAMANHO_TESTE,
+  step = PASSO,
+  modelo_func = function() { ts_arima() }
+)
+
+# --- Análise dos Resultados ---
+
+# 1. Imprimir as métricas médias
+cat("\n--- MÉTRICAS MÉDIAS DA VALIDAÇÃO CRUZADA ---\n")
+print(resultados_cv$media_metricas)
+```
