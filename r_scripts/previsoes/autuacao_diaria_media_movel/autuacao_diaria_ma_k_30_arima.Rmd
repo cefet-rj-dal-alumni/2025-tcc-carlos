@@ -12,7 +12,7 @@ library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(zoo) 
-
+source("../validacao/validacao_cruzada_plot.R")
 ```
 
 ## Obtenção dos dados
@@ -108,7 +108,7 @@ ts_data <- df_ordenado_valor_pago_total$data_pagamento
 ## Separação teste/treino
 
 ```{r}
-samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 90)
+samp <- ts_sample(ts_valor_pago_dia_suavizado, test_size = 365)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -156,7 +156,7 @@ plot_data <- data.frame(
   prediction = c(rep(NA, length(yvalues) - length(prediction)), prediction)
 )
 
-data_inicio <- as.Date("2024-01-01")
+data_inicio <- as.Date("2022-01-01")
 data_fim <- as.Date("2025-01-01")
 
 ggplot(plot_data, aes(x = data)) +
@@ -188,20 +188,20 @@ cat("Tamanhos:", "\n",
 ```
 
 ## Validação Cruzada
-
 ```{r}
-TAMANHO_TESTE <- 90  # Prever 90 dias à frente (aprox. 3 meses)
-TAMANHO_TREINO <- 365 * 4 # Usar 4 anos de dados para treinar
-PASSO <- TAMANHO_TESTE # Janela não sobreposta, desliza pelo tamanho do teste
+QTD_TESTES <- 3
+TAMANHO_TESTE <- 90 
+TAMANHO_TREINO <- length(yvalues) - (QTD_TESTES * TAMANHO_TESTE) 
+PASSO <- TAMANHO_TESTE 
 
-
-resultados_cv <- validacao_cruzada_ts(
+resultados_cv <- validacao_cruzada_plot_ts(
   serie_temporal = df_ordenado_valor_pago_total$valor_pago_suavizado,
   datas_ts = df_ordenado_valor_pago_total$data_pagamento,
   tam_janela_treino = TAMANHO_TREINO,
   tam_janela_teste = TAMANHO_TESTE,
   step = PASSO,
-  modelo_func = function() { ts_arima() }
+  modelo_func = function() { ts_arima() },
+  zoom_dias_antes_previsao = 180
 )
 
 # --- Análise dos Resultados ---
@@ -209,4 +209,5 @@ resultados_cv <- validacao_cruzada_ts(
 # 1. Imprimir as métricas médias
 cat("\n--- MÉTRICAS MÉDIAS DA VALIDAÇÃO CRUZADA ---\n")
 print(resultados_cv$media_metricas)
+plotar_todos_os_folds(resultados_cv$plots_folds)
 ```

@@ -7,12 +7,13 @@ output: html_document
 
 ```{r}
 library(daltoolbox)
+library(daltoolboxdp)
 library(readr)
 library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(zoo) 
-
+source("../validacao/validacao_cruzada_plot.R")
 
 ```
 
@@ -110,7 +111,6 @@ ev_test
 
 ```
 
-
 ## Plot do gráfico
 
 ```{r}
@@ -146,11 +146,35 @@ ggplot(plot_data, aes(x = data)) +
   guides(color = "none")
 ```
 
-
 ## Tamanhos
+
 ```{r}
 cat("Tamanhos:\nSérie:", length(yvalues), "\n",
     "Teste:", length(io_test$input), "\n",
     "Steps Ahead:", length(prediction), "\n",
     "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n")
+```
+
+```{r}
+QTD_TESTES <- 3
+TAMANHO_TESTE <- 24
+TAMANHO_TREINO <- length(yvalues) - (QTD_TESTES * TAMANHO_TESTE) 
+PASSO <- TAMANHO_TESTE 
+
+resultados_cv <- validacao_cruzada_plot_ts(
+  serie_temporal = df_ordenado_valor_pago_total_semana$valor_pago_total,
+  datas_ts = df_ordenado_valor_pago_total_semana$semana_pagamento,
+  tam_janela_treino = TAMANHO_TREINO,
+  tam_janela_teste = TAMANHO_TESTE,
+  step = PASSO,
+  modelo_func = function() { ts_arima() },
+  zoom_dias_antes_previsao = 180
+)
+
+# --- Análise dos Resultados ---
+
+# 1. Imprimir as métricas médias
+cat("\n--- MÉTRICAS MÉDIAS DA VALIDAÇÃO CRUZADA ---\n")
+print(resultados_cv$media_metricas)
+plotar_todos_os_folds(resultados_cv$plots_folds)
 ```

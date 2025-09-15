@@ -1,0 +1,95 @@
+---
+title: "scripts_agregacao_temporal"
+output: html_document
+---
+
+# Dependências
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo) 
+
+```
+
+**df_autuacao:** data frame com todas as multas
+
+```{r}
+if (!exists("df") || is.null(df) || is.function(df)) {
+  df <- data.frame(df_autuacao)
+}
+```
+
+## Pré-processamento
+
+```{r}
+df <- df %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2016-01-01" &
+    data_pagamento < "2025-01-01") %>%
+  mutate(
+    data = as.Date(data)
+  ) 
+
+```
+
+# Processamento agregação temporal
+
+## Multas agregadas semanalmente
+
+```{r}
+df_ordenado_valor_pago_total_semana <- df %>%
+  mutate(
+    semana_pagamento = floor_date(data_pagamento, "week")#ajustar pra nao ficar a ultima semana com dias faltantes
+  ) %>%
+  group_by(semana_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
+  ) %>%
+  select(semana_pagamento, valor_pago_total) 
+
+df_ordenado_valor_pago_total_semana$semana_pagamento <- as.Date(df_ordenado_valor_pago_total_semana$semana_pagamento)
+
+
+```
+
+## Multas agregadas quinzenalmente
+
+```{r}
+df_ordenado_valor_pago_total_quinzena <- df %>%
+  mutate(
+    quinzena_pagamento = if_else(
+      day(data_pagamento) <= 15,
+      floor_date(data_pagamento, "month"),
+      floor_date(data_pagamento, "month") + days(15)
+    )
+  ) %>%
+  group_by(quinzena_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
+  )
+
+
+df_ordenado_valor_pago_total_quinzena$quinzena_pagamento <- as.Date(df_ordenado_valor_pago_total_quinzena$quinzena_pagamento)
+```
+
+## Multas agregadas mensalmente
+
+```{r}
+df_ordenado_valor_pago_total_mes <- df %>%
+  mutate(
+    mes_pagamento = floor_date(data_pagamento, "month")
+  ) %>%
+  group_by(mes_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
+  ) %>%
+  select(mes_pagamento, valor_pago_total) 
+
+df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
+```

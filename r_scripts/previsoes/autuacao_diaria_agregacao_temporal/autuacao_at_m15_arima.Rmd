@@ -12,7 +12,7 @@ library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(zoo) 
-
+source("../validacao/validacao_cruzada_plot.R")
 
 ```
 
@@ -38,7 +38,7 @@ df_ordenado_valor_pago_total_quinzena <- df %>%
     !is.na(valor_pago) &
     valor_pago > 0.0 &
     data_pagamento > "2016-01-01" &
-    data_pagamento < "2025-01-01") %>%
+    data_pagamento < "2025-02-01") %>%
   mutate(
     data = as.Date(data)
   ) 
@@ -78,7 +78,7 @@ ts_data <- df_ordenado_valor_pago_total_quinzena$quinzena_pagamento
 
 ```{r}
 
-samp <- ts_sample(ts_valor_pago_total_quinzena, test_size = 21)
+samp <- ts_sample(ts_valor_pago_total_quinzena, test_size = 12)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
@@ -148,10 +148,38 @@ ggplot(plot_data, aes(x = data)) +
 ```
 
 ## Tamanhos
+
 ```{r}
 cat("Tamanhos:", "\n",
     "Série:", length(yvalues), "\n",
     "Teste:", length(io_test$input), "\n",
     "Steps Ahead:", length(prediction), "\n",
-    "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n")
+    "Porcentagem Teste:", sprintf("%.2f%%", length(prediction)/length(yvalues)*100), "\n",
+    "Porcentagem Teste * 3:", sprintf("%.2f%%", length(prediction)*3/length(yvalues)*100), "\n")
+```
+
+## Validação Cruzada
+
+```{r}
+QTD_TESTES <- 3
+TAMANHO_TESTE <- 12
+TAMANHO_TREINO <- length(yvalues) - (QTD_TESTES * TAMANHO_TESTE) 
+PASSO <- TAMANHO_TESTE 
+
+resultados_cv <- validacao_cruzada_plot_ts(
+  serie_temporal = df_ordenado_valor_pago_total_quinzena$valor_pago_total,
+  datas_ts = df_ordenado_valor_pago_total_quinzena$quinzena_pagamento,
+  tam_janela_treino = TAMANHO_TREINO,
+  tam_janela_teste = TAMANHO_TESTE,
+  step = PASSO,
+  modelo_func = function() { ts_arima() },
+  zoom_dias_antes_previsao = 180
+)
+
+# --- Análise dos Resultados ---
+
+# 1. Imprimir as métricas médias
+cat("\n--- MÉTRICAS MÉDIAS DA VALIDAÇÃO CRUZADA ---\n")
+print(resultados_cv$media_metricas)
+plotar_todos_os_folds(resultados_cv$plots_folds)
 ```
