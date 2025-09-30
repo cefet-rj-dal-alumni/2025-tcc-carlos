@@ -1,0 +1,2 @@
+"input_size","preprocess","augment","kernel","epsilon","cost","key","window_size"
+6,"ts_norm_ean","ts_aug_none","linear",0,80,32,6

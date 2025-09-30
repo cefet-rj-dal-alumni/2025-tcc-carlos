@@ -1,0 +1,36 @@
+source('./wf_experiment.R')
+
+datasets <- c('bioenergy', 'climate', 'emissions', 'emissions-co2', 'fertilizers', 'gdp', 'pesticides')
+test_size <- 5
+
+sw_size <- c(6,8,10)
+preprocess <- list(ts_norm_diff())
+augment <- list(ts_aug_none())
+ranges <- list(nodesize=1:10, ntree=seq(20,100,20))
+params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
+
+for (ds in datasets) {
+  create_directories(sub('-.*', '', ds))
+  df <- read.csv(sprintf('%s/input/%s.csv', sub('-.*', '', ds), ds))
+  for (ts in colnames(df)) {
+    filename <- sprintf('%s/%s_%s', sub('-.*', '', ds), ts, 'rfr')
+    print(filename)
+    run_ml(df[[ts]], filename, ts_rf(), test_size=test_size, params=params)
+    
+    #cases <- get_combinations(params)
+    #for (i in 1:length(cases)) {
+    #  name <- get_names(filename, cases[[i]])
+    #  print(name)
+    #  tryCatch({
+    #    run_ml(df[[ts]], name, ts_rf(), test_size=test_size, params=cases[[i]])
+    #  }, error = function(e) {
+    #    print('erro')
+    #    error_dir <- sprintf('./error/%s', sub('-.*', '', ds))
+    #    if (!dir.exists(error_dir))
+    #      dir.create(error_dir, recursive = TRUE)
+    #    error_file <- sprintf('./error/%s', name)
+    #    writeLines(as.character(e), error_file)
+    #  })
+    #}
+  }
+}
