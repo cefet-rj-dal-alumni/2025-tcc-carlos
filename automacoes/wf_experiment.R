@@ -2,7 +2,9 @@
 #estes códigos só funcionam nestas versões do daltoolbox e tspredit
 #install.packages("remotes")
 #remotes::install_version("daltoolbox", version = "1.1.727")
+#remotes::install_version("daltoolbox")
 #remotes::install_version("tspredit", version = "1.0.787", dependencies = FALSE)
+#remotes::install_version("tspredit")
 #install.packages("daltoobox")
 #-----------------------------------------------
 #------------------ LIBRARIES ------------------
@@ -35,7 +37,6 @@ describe <- function(obj) {
   else
     return(as.character(class(obj)[1]))
 }
-
 
 get_preprocess <- function(preprocess) {
   func_map <- list( ts_norm_gminmax  = ts_norm_gminmax,
@@ -186,7 +187,7 @@ train_ml <- function(obj, x, params) {
       
       # Tuning
       if (obj$sw_size != 0) {
-        tune <- ts_maintune(obj$input_size, obj$base_model, folds=10, preprocess=obj$preprocess, augment=obj$augment)
+        tune <- ts_integtune(obj$input_size, obj$base_model, folds=10, range=obj$ranges, preprocess=obj$preprocess, augment=obj$augment)
         tryCatch({
           obj$model <- fit(tune, xy$input, xy$output, obj$ranges)
           obj$input_size <- obj$model$input_size
