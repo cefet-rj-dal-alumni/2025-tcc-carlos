@@ -1,10 +1,10 @@
 source('./wf_experiment.R')
 
-datasets <- c('bioenergy', 'climate', 'emissions', 'emissions-co2', 'fertilizers', 'gdp', 'pesticides')
-test_size <- 5
+datasets <- c('autuacao_semanal')
+test_size <- 12
 
-sw_size <- c(6,8,10)
-preprocess <- list(ts_norm_diff())
+sw_size <- c(4)
+preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
 ranges <- list(nodesize=1:10, ntree=seq(20,100,20))
 params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)

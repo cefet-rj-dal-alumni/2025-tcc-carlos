@@ -3,7 +3,7 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(6)
+sw_size <- c(4)
 preprocess <- list(ts_norm_gminmax(), ts_norm_an(), ts_norm_swminmax())
 augment <- list(ts_aug_none())
 ranges <- list(nhid=1:10, actfun=c('sig','relu','purelin'))

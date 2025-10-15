@@ -105,6 +105,7 @@ wf_experiment <- function( filename, base_model,
 compute_performance <- function(model, true, pred) {
   test_size <- length(pred)
   mse <- smape <- r2 <- NULL
+  
   for (j in 1:test_size) {
     performance <- evaluate(model, true[1:j], pred[1:j])
     mse <- c(mse, performance$mse)
@@ -130,8 +131,13 @@ save_image <- function(obj, strategy) {
 
 #-----------------------------------------------
 #----------------- MLM & ARIMA -----------------
-run_ml <- function( x, filename, base_model, test_size,
-                    params=list(sw_size=c(0), preprocess=list(ts_norm_none())) ) {
+run_ml <- function( x,
+                    filename,
+                    base_model,
+                    test_size,
+                    params=list(sw_size=c(0), preprocess=list(ts_norm_none())),
+                    stgy = list(ro=TRUE, sa=TRUE)
+                    ) {
   
   # Fit
   train_size <- length(x)-test_size
@@ -145,19 +151,24 @@ run_ml <- function( x, filename, base_model, test_size,
   
   # Predict
   results <- NULL
-  #rolling origin
-  for (j in 1:test_size) {
-    result <- test_ml(best_model, x, test_pos=train_size+1, test_size=j, steps_ahead=1)
-    results <- rbind(results, result$df)
+  #rolling origin (ro) ------------------------------------------
+  if (stgy$ro == TRUE){
+    for (j in 1:test_size) {
+      result <- test_ml(best_model, x, test_pos=train_size+1, test_size=j, steps_ahead=1)
+      results <- rbind(results, result$df)
+    }
+    #save_image(result$model, 'ro')
   }
-  save_image(result$model, 'ro')
-  #steps ahead
-  result <- test_ml(best_model, x, test_pos=train_size+1, test_size=test_size, steps_ahead=test_size)
-  results <- rbind(results, result$df)
-  save_image(result$model, 'sa')
+  #steps ahead (sa) -------------------------------------------
+  if (stgy$sa == TRUE){
+    result <- test_ml(best_model, x, test_pos=train_size+1, test_size=test_size, steps_ahead=test_size)
+    results <- rbind(results, result$df)
+    #save_image(result$model, 'sa')
+  }
   
   # Results
-  save(results, file=sprintf('%s.rdata', sub('/', '/results/', filename)))
+  return(results)
+  #save(results, file=sprintf('%s.rdata', sub('/', '/results/', filename)))
 }
 
 #-------------------- Train --------------------

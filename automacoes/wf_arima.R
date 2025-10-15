@@ -1,7 +1,7 @@
 source('./wf_experiment.R')
 
-datasets <- c('autuacao_semanal')
-test_size <- 5
+datasets <- c('autuacao_mensal')
+test_size <- 12
 
 for (ds in datasets) {
   create_directories(sub('-.*', '', ds))
