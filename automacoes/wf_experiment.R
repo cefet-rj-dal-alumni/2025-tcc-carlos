@@ -9,6 +9,7 @@
 #-----------------------------------------------
 #------------------ LIBRARIES ------------------
 library(daltoolbox)
+library(daltoolboxdp)
 library(tspredit)
 library(stringi)
 library(dplyr)
@@ -83,7 +84,8 @@ get_names <- function(filename, params) {
 }
 
 
-wf_experiment <- function( filename, base_model,
+wf_experiment <- function( filename,
+                           base_model,
                            sw_size = c(0),
                            input_size = c(0),
                            preprocess = list(ts_norm_none()),
@@ -106,13 +108,22 @@ compute_performance <- function(model, true, pred) {
   test_size <- length(pred)
   mse <- smape <- r2 <- NULL
   
-  for (j in 1:test_size) {
-    performance <- evaluate(model, true[1:j], pred[1:j])
-    mse <- c(mse, performance$mse)
-    smape <- c(smape, 100*performance$smape)
-    r2 <- c(r2, performance$R2)
-  }
-  return(list(mse=mse, smape=smape, r2=r2))
+  performance <- evaluate(model, true[1:test_size], pred[1:test_size])
+  
+  #calcula a media para o test size
+  return(list(mse = performance$mse, 
+              smape = 100 * performance$smape, 
+              r2 = performance$R2))
+  
+  #estava fazendo a media acumulada dos pontos futuros
+  #for (j in 1:test_size) {
+  #  performance <- evaluate(model, true[1:j], pred[1:j])
+  #  mse <- c(mse, performance$mse)
+  #  smape <- c(smape, 100*performance$smape)
+  #  r2 <- c(r2, performance$R2)
+  #}
+  
+  #return(list(mse=mse, smape=smape, r2=r2))
 }
 
 
@@ -143,12 +154,12 @@ run_ml <- function( x,
   train_size <- length(x)-test_size
   model <- wf_experiment(filename, base_model)
   best_model <- train_ml(model, x[1:train_size], params)
+  
   if (is.null(best_model)) {
     #params$preprocess <- list(ts_norm_gminmax())
     #params$sw_size <- c(10)
     #best_model <- train_ml(model, x[1:train_size], params)
   }
-  
   # Predict
   results <- NULL
   #rolling origin (ro) ------------------------------------------
@@ -192,7 +203,7 @@ train_ml <- function(obj, x, params) {
       input_size <- sw #sw_size[sw_size <= sw]
       if (as.character(describe(dn)) == 'ts_norm_diff') input_size <- input_size - 1
       if (as.character(describe(obj$base_model)) == 'ts_conv1d') input_size <- input_size - 1
-      #if (as.character(describe(obj$base_model)) == 'ts_lstm') input_size <- input_size - 1
+      if (as.character(describe(obj$base_model)) == 'ts_lstm') input_size <- input_size - 1
       ranges <- list(input_size=input_size, preprocess=list(dn), augment=params$augment, ranges=params$ranges)
       obj <- set_params(obj, ranges)
       
@@ -231,10 +242,12 @@ train_ml <- function(obj, x, params) {
   #Save parameters
   params <- attr(best_model$model, 'params')
   if (!is.null(hyperparameters)) {
-    save(hyperparameters, file=sprintf('%s_hparams.rdata', sub('/', '/hyper/', obj$filename)))
+    #salvar hiperparametros
+    #save(hyperparameters, file=sprintf('%s_hparams.rdata', sub('/', '/hyper/', obj$filename)))
     params$window_size <- best_model$sw_size
   }
-  write.csv(params, file=sprintf('%s_params.csv', sub('/', '/hyper/', obj$filename)), row.names=FALSE)
+  #salvar parametros
+  #write.csv(params, file=sprintf('%s_params.csv', sub('/', '/hyper/', obj$filename)), row.names=FALSE)
   
   #Return optimized model
   return(best_model)
@@ -269,23 +282,45 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1) {
   obj$prediction <- as.vector(obj$prediction)
   obj$ev_prediction <- compute_performance(obj$model, obj$test, obj$prediction)
   
+  
   # Results
   experiment <- strsplit(obj$filename, '_')[[1]]
-  encoder <- obj$model$encoder
-  result <- data.frame( instance = sub('^[^_]*_[^_]*_', '', obj$filename),
-                        dataset = sub('/.*', '', experiment[2]),
-                        ts = sub('^.*?/', '', experiment[1]),
-                        model = experiment[3],
-                        preprocess = sub('.*_(.*)', '\\1', describe(obj$preprocess)),
-                        augment = sub('.*_(.*)', '\\1', describe(obj$augment)),
-                        window_size = obj$sw_size,
-                        test_size = index,
-                        strategy = strategy,
-                        true = output[index],
-                        pred = obj$prediction[index],
-                        mse = obj$ev_prediction$mse[index],
-                        smape = obj$ev_prediction$smape[index],
-                        r2 = obj$ev_prediction$r2[index] )
+    
+  if (FALSE) {
+    encoder <- obj$model$encoder
+    result <- data.frame( instance = sub('^[^_]*_[^_]*_', '', obj$filename),
+                          dataset = sub('/.*', '', experiment[2]),
+                          ts = sub('^.*?/', '', experiment[1]),
+                          model = experiment[3],
+                          preprocess = sub('.*_(.*)', '\\1', describe(obj$preprocess)),
+                          augment = sub('.*_(.*)', '\\1', describe(obj$augment)),
+                          window_size = obj$sw_size,
+                          test_size = index,
+                          strategy = strategy,
+                          true = output[index],
+                          pred = obj$prediction[index],
+                          mse = obj$ev_prediction$mse[index],
+                          smape = obj$ev_prediction$smape[index],
+                          r2 = obj$ev_prediction$r2[index] )
+  }
+  else
+  {
+    # Results - APENAS médias
+    result <- data.frame( 
+      instance = sub('^[^_]*_[^_]*_', '', obj$filename),
+      dataset = sub('/.*', '', experiment[2]),
+      ts = sub('^.*?/', '', experiment[1]),
+      model = experiment[3],
+      preprocess = sub('.*_(.*)', '\\1', describe(obj$preprocess)),
+      augment = sub('.*_(.*)', '\\1', describe(obj$augment)),
+      window_size = obj$sw_size,
+      test_size = test_size,
+      strategy = strategy,
+      mse = mean(obj$ev_prediction$mse, na.rm = TRUE),
+      smape = mean(obj$ev_prediction$smape, na.rm = TRUE),
+      r2 = mean(obj$ev_prediction$r2, na.rm = TRUE)
+    )
+  }
   
   return(list(df=result, model=obj))
 }

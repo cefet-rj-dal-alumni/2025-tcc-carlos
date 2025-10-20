@@ -3,7 +3,7 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(52)
+sw_size <- c(6, 12 ,24, 36, 48, 60)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
 ranges <- list(k=c(3:10))
@@ -15,7 +15,6 @@ for (ds in datasets) {
   create_directories(sub('-.*', '', ds))
   df <- read.csv(sprintf('%s/input/%s.csv', sub('-.*', '', ds), ds))
   for (ts in colnames(df)) {
-#    print(ts)
     filename <- sprintf('%s/%s_%s', sub('-.*', '', ds), ts, 'knn')
 #    print(filename)
 #    run_ml(df[[ts]], filename, ts_knn(), test_size=test_size, params=params)

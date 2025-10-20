@@ -3,11 +3,13 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(52)
+sw_size <- c(6, 12 ,24, 36, 48, 60)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
 ranges <- list(size=1:10, decay = seq(0.1,1,0.1), maxit=1000)
 params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
+
+results2 <- list()
 
 for (ds in datasets) {
   create_directories(sub('-.*', '', ds))
