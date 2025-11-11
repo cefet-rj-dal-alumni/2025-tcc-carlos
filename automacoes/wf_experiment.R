@@ -128,7 +128,7 @@ compute_performance <- function(model, true, pred) {
 
 
 save_image <- function(obj, strategy) {
-  jpeg(sprintf('%s_%s.jpg', sub('/', '/graphics/', obj$filename), strategy), width = 640, height = 480)
+  jpeg(sprintf('%s_%s.jpg', sub('/', '/graphics/', obj$filename), strategy), width = 1280, height = 720)
   yvalues <- c(obj$train, obj$test)
   xlabels <- 1:length(yvalues)
   if(!is.null(names(yvalues)))
@@ -147,9 +147,8 @@ run_ml <- function( x,
                     base_model,
                     test_size,
                     params=list(sw_size=c(0), preprocess=list(ts_norm_none())),
-                    stgy = list(ro=TRUE, sa=TRUE)
+                    stgy = list(ro=TRUE, sa=TRUE, image=FALSE)
                     ) {
-  
   # Fit
   train_size <- length(x)-test_size
   model <- wf_experiment(filename, base_model)
@@ -174,7 +173,10 @@ run_ml <- function( x,
   if (stgy$sa == TRUE){
     result <- test_ml(best_model, x, test_pos=train_size+1, test_size=test_size, steps_ahead=test_size)
     results <- rbind(results, result$df)
-    #save_image(result$model, 'sa')
+    if (stgy$image == TRUE){
+      print(sprintf("Criando gráfico para '%s'.", filename))
+      save_image(result$model, 'sa')
+    }
   }
   
   # Results
@@ -265,7 +267,7 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1) {
   xwt <- na.omit(xwt)
   xyt <- ts_projection(xwt)    
   output <- as.vector(xyt$output)
-  
+
   # Testing
   if (steps_ahead == 1)  {
     strategy <- 'ro'
@@ -323,5 +325,79 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1) {
   }
   
   return(list(df=result, model=obj))
+}
+
+
+get_params_from_name <- function(filename_full) {
+  # Divide o nome do arquivo completo usando '_'
+  parts <- strsplit(filename_full, "_")[[1]]
+  
+  # A primeira parte é o basename (que você chamou de 'filename' na original)
+  basename <- parts[1]
+  
+  # As partes restantes (depois do basename) contêm os parâmetros
+  param_parts <- parts[-1]
+  
+  # 1. Extrair sw_size
+  # Espera-se que seja a primeira parte depois do basename, e.g., "sw-128"
+  sw_part <- param_parts[3]
+  sw_size <- as.numeric(gsub("^sw-", "", sw_part))
+  
+  # 2. Extrair preprocess (dn) e augment (da)
+  # A segunda e terceira partes, e.g., "dn-none", "da-none"
+  dn_part <- param_parts[2]
+  da_part <- param_parts[3]
+  
+  # Funções inversas de describe/gsub('ts_', '') para simplificar a saída
+  # Aqui, vou retornar as strings como estão, pois a função original 'describe'
+  # não foi fornecida. Retornamos 'ts_NOME' (como 'describe' faria) ou 'NOME'.
+  
+  # Reconstrói os nomes de preprocess/augment. Se o nome original tinha '_' (ex: ts_raw_data)
+  # ele foi trocado por '-' (ex: ts-raw-data) e teve o 'ts_' removido.
+  # Inverter isso perfeitamente requer o 'describe' original, mas para extração,
+  # é melhor retornar o nome "limpo" que está no arquivo.
+  
+  preprocess_name <- gsub("-", "_", gsub("^dn-", "", dn_part))
+  augment_name <- gsub("-", "_", gsub("^da-", "", da_part))
+  
+  # 3. Extrair os parâmetros de Machine Learning (ml) e seus ranges
+  # Esta é a parte mais complexa: todas as partes restantes, unidas por '_'
+  ml_parts <- param_parts[4:length(param_parts)]
+  
+  ranges <- list()
+  if (length(ml_parts) > 0) {
+    # Junta as partes novamente (que estavam separadas por '_')
+    ml_string <- paste(ml_parts, collapse = "_")
+    
+    # Divide a string ml usando '_' para obter os pares "p-v" (nome-valor)
+    pv_pairs <- strsplit(ml_string, "_")[[1]]
+    
+    for (pair in pv_pairs) {
+      # Divide o par "p-v" usando '-'
+      # Exemplo: "epochs-100" -> c("epochs", "100")
+      parts_pv <- strsplit(pair, "-")[[1]]
+      p_name <- parts_pv[1]
+      p_value <- parts_pv[2]
+      
+      # Adiciona ao objeto ranges
+      # Nota: Os nomes dos parâmetros 'p' originais podem ter sido simplificados
+      # (removidos caracteres especiais) no get_names. A função invertida não pode
+      # recuperar esses caracteres especiais perdidos. Retornamos o nome "limpo".
+      ranges[[p_name]] <- p_value
+    }
+  }
+  
+  # Constrói e retorna o objeto de parâmetros
+  return(list(
+    filename_base = basename, # Retorna o basename original
+    params = list(
+      sw_size = sw_size,
+      # Retornamos as strings encontradas, já que a estrutura original era complexa
+      # O ideal seria ter a função 'describe' para a reconstrução exata.
+      preprocess = list(preprocess_name),
+      augment = list(augment_name),
+      ranges = ranges
+    )
+  ))
 }
 #-----------------------------------------------

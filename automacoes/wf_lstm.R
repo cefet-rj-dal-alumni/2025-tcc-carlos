@@ -3,7 +3,7 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(6, 12 ,24, 36, 48, 60)
+sw_size <- c(24, 36, 48, 60)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
 ranges <- list(epochs=1000, lr=c(0.01,0.025,0.04))
