@@ -1,0 +1,119 @@
+## Dependências
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo) 
+library(daltoolboxdp)
+library(tspredit)
+library(stringi)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(e1071)
+library(devtools)
+source("../validacao/validacao_cruzada_plot.R")
+```
+
+-   **df_autuacao:** dataframe com as observações diárias das infrações de trânsito
+
+    (data, status_infracao, valor_pago, especie_veiculo, data_pagamento, data_limite_recurso, descricao_autuacao, tipo_veiculo)
+
+```{r}
+if (!exists("df") || is.null(df) || is.function(df)) {
+  df <- data.frame(df_autuacao)
+}
+```
+
+```{r}
+head(df)
+```
+
+## Pré-processamento
+
+```{r}
+df_ordenado_valor_pago_total_mes <- df %>%
+  filter(
+    !is.na(valor_pago) &
+    valor_pago > 0.0 &
+    data_pagamento > "2016-01-01" &
+    data_pagamento < "2025-01-01") %>%
+  mutate(
+    data = as.Date(data)
+  ) 
+
+```
+
+## Processamento
+
+```{r}
+df_ordenado_valor_pago_total_mes <- df_ordenado_valor_pago_total_mes %>%
+  mutate(
+    mes_pagamento = floor_date(data_pagamento, "month")
+  ) %>%
+  group_by(mes_pagamento) %>%
+  summarise(
+    valor_pago_total = sum(valor_pago, na.rm = TRUE)
+  ) %>%
+  select(mes_pagamento, valor_pago_total) 
+
+df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago_total_mes$mes_pagamento)
+```
+
+definir parametros
+
+```{r}
+test_size <- 12
+sw_size <- 36
+
+preprocess <- ts_norm_gminmax()
+input_size <- 6
+size <- 1
+decay <- 0.1
+maxit <- 1000
+
+model <- ts_mlp(preprocess, input_size = input_size, size=size, decay=decay, maxit=maxit)
+```
+
+transformar em st
+
+```{r}
+ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, test_size)
+ts_data <- df_ordenado_valor_pago_total_mes$mes_pagamento
+```
+
+
+## validacao cruzada
+
+```{r}
+# Adicione isso antes de rodar a validação para debug
+cat("Verificando dados:\n")
+cat(sprintf("Série temporal: %d observações\n", length(df_ordenado_valor_pago_total_mes$valor_pago_total)))
+cat(sprintf("Datas: %d observações\n", length(df_ordenado_valor_pago_total_mes$mes_pagamento)))
+
+QTD_TESTES <- 1
+TAMANHO_TESTE <- 12
+TAMANHO_TREINO <- 36
+PASSO <- TAMANHO_TESTE
+
+resultados_cv <- validacao_cruzada_plot_ts(
+  serie_temporal = df_ordenado_valor_pago_total_mes$valor_pago_total,
+  datas_ts = df_ordenado_valor_pago_total_mes$mes_pagamento,
+  tam_janela_treino = TAMANHO_TREINO,
+  tam_janela_teste = TAMANHO_TESTE,
+  step = PASSO,
+  modelo_func = function() {
+    ts_mlp(ts_norm_gminmax(), input_size=4, size=4, decay=0)
+  }
+)
+
+# Ver métricas
+print(resultados_cv$media_metricas)
+
+# Ver todos os plots (sem zoom!)
+plotar_todos_os_folds(resultados_cv$plots_folds)
+
+```
