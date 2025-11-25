@@ -6,6 +6,8 @@ library(ggplot2)
 library(zoo)
 library(tspredit)
 
+set.seed(120770)
+
 # --- Definição das Funções ---
 
 setwd("~/tcc_carlos/r_scripts/previsoes/validacao")
@@ -21,7 +23,7 @@ criar_diretorio_imagens <- function() {
 salvar_plot_fold <- function(plot_obj, fold_index) {
   diretorio <- "imagens"
   nome_arquivo <- sprintf("%s/fold_%02d_predicao.png", diretorio, fold_index)
-  ggsave(nome_arquivo, plot_obj, width = 8, height = 5, units = "in")
+  ggsave(nome_arquivo, plot_obj, width = 16, height = 10, units = "in")
 }
 
 # --- Início do Processamento ---
@@ -59,7 +61,7 @@ while(fim_total_janela <= length(df$valor_pago))
   io_test <- ts_projection(samp$test)
   
   # Modelo e Treinamento
-  model <- ts_mlp(ts_norm_gminmax(), input_size=1, size=1, decay=0.1, maxit=1000)
+  model <- ts_mlp(ts_norm_gminmax(), input_size=sw_size, size=1, decay=0.1, maxit=1000)
   model <- fit(model, x=io_train$input, y=io_train$output)
   
   # Previsão
@@ -91,38 +93,28 @@ while(fim_total_janela <= length(df$valor_pago))
 
 # --- Resultado Final Após o Loop ---
 cat("\n===================================================\n")
-cat("          ✅ RESULTADOS DA VALIDAÇÃO CRUZADA        \n")
+cat("           SULTADOS DA VALIDAÇÃO CRUZADA            \n")
 cat("===================================================\n")
 
 # Combina as métricas de todos os folds em um data.frame (contém as repetições)
 final_metrics_df <- bind_rows(all_test_metrics)
 
-# 🚀 NOVO PASSO: Sumariza as métricas, obtendo uma linha por Fold
 metrics_summary_df <- final_metrics_df %>%
   group_by(Fold) %>%
-  # Calcula a média das métricas para cada Fold (como são idênticas, 
-  # retorna o valor único do Fold). Inclua todas as métricas desejadas.
   summarise(
     mse = mean(mse, na.rm = TRUE),
     smape = mean(smape, na.rm = TRUE),
     R2 = mean(R2, na.rm = TRUE)
-    # Adicione outras métricas se houver (e.g., rmse = mean(rmse), mae = mean(mae))
   ) %>%
-  ungroup() # Remove o agrupamento para operações futuras
+  ungroup() 
 
-## 📋 Métricas de Cada Fold
-
-cat("\n### 📊 Detalhe das Métricas por Fold\n")
-# Imprime o data.frame SUMARIZADO
+cat("\n### Detalhe das Métricas por Fold\n")
 print(metrics_summary_df) 
 
-## 📈 Média Final das Métricas
-
 # Calcula a média final a partir do data.frame SUMARIZADO
-# Excluímos a coluna 'Fold' para o cálculo da média geral
 mean_metrics <- colMeans(metrics_summary_df[, names(metrics_summary_df) != "Fold"], na.rm = TRUE)
 
-cat("\n### 📝 Média das Métricas em Todos os Folds\n")
-# Imprime o vetor de médias
+cat("\n### Média das Métricas em Todos os Folds\n")
+
 print(mean_metrics)
 cat("---------------------------------------------------\n")
