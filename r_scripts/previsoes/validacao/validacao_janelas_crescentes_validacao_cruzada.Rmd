@@ -1,0 +1,110 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(tspredit)
+
+source('./util.R')
+```
+
+## Carregar csv
+
+```{r}
+filename <- "autuacao_mensal.csv"
+df <- read.csv(filename) 
+
+if (nrow(df) == 0) {
+  stop("O data.frame 'df' está vazio. Não é possível prosseguir.")
+}
+
+```
+
+## Config
+
+```{r}
+test_size <- 12
+sw_size <- 4#seq(4, 6, 2)
+
+model <- ts_mlp(ts_norm_gminmax(), input_size=sw_size, size=1, decay=0.1, maxit=1000) 
+```
+
+## Treinamento e Teste
+
+```{r}
+results <- data.frame()
+
+for(sw in sw_size){
+  cat(sprintf("Processando SW %d... ", sw))
+  
+  train_size <- sw# * 2 # train + adjust
+  
+  fold_index <- 1
+  inicio_train <- 1
+  fim_total_janela <- inicio_train + train_size + test_size - 2
+
+  while(fim_total_janela <= length(df$valor_pago))
+  {
+    cat(sprintf("Processando Fold %d... ", fold_index))
+    
+    x <- df$valor_pago[inicio_train : fim_total_janela]
+    ts <- ts_data(x, sw)
+    
+    samp <- ts_sample(ts, test_size = test_size)
+    
+    io_train <- ts_projection(samp$train)
+    io_test <- ts_projection(samp$test)
+    
+    preproc <- ts_norm_gminmax()
+    model <- ts_mlp(preproc, input_size=sw, size=1, decay=0.1, maxit=1000)
+    model <- fit(model, x=io_train$input, y=io_train$output)
+  
+    adjust <- predict(model, io_train$input)
+    prediction <- predict(model, x=io_test$input[1, ], steps_ahead=test_size)
+  
+    ev_test <- evaluate(model, as.vector(io_test$output), as.vector(prediction))
+    ev_test$Fold <- fold_index
+    
+    ev_df <- data.frame(
+      sw = sw,
+      fold = fold_index,
+      mse = ev_test$mse,
+      smape = ev_test$smape,
+      r2 = ev_test$R2
+    )
+    
+    results <- rbind(results, ev_df)
+    
+    yvalues <- c(as.vector(io_train$output), as.vector(io_test$output))
+    
+    plot_obj <- plot_ts_pred(y=yvalues,
+                             yadj=as.vector(adjust),
+                             ypre=as.vector(prediction)) + 
+      theme(text = element_text(size=16))
+    
+    folder_name <- "mlp_janelas_crescentes"
+    
+    create_directories(folder_name)
+    
+    plot_name <- paste("janela-", sw, "_fold-", fold_index, "_plot", sep="")
+    salvar_plot(plot_obj, folder_name, plot_name)
+    
+    cat("OK\n")
+    
+    fim_total_janela <- fim_total_janela + test_size
+    fold_index <- fold_index + 1
+  }
+}
+```
+
+```{r}
+View(results)
+```
