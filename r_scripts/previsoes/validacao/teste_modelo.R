@@ -44,9 +44,6 @@ input_dates <- df$mes_pagamento[(len_input - window_size) : (len_input - 1)]
 predicted_values <- predict(model, x=projection$input[1,], steps_ahead=steps_ahead)
 
 
-
-
-
 last_historical_date <- as.Date(input_dates_chr[length(input_dates_chr)], format = "%Y-%m-%d")
 
 future_dates <- seq(last_historical_date + months(1), by = "month", length.out = steps_ahead)

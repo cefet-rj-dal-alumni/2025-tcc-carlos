@@ -6,12 +6,17 @@ library(ggplot2)
 library(zoo)
 library(tspredit)
 
+setwd("~/tcc_carlos/r_scripts/previsoes/validacao")
+
 test_size <- 12
 sw_size <- 36
 
-# --- Definição das Funções ---
+filename <- "autuacao_mensal.csv"
+df <- read.csv(filename) 
 
-setwd("~/tcc_carlos/r_scripts/previsoes/validacao")
+if (nrow(df) == 0) {
+  stop("O data.frame 'df' está vazio. Não é possível prosseguir.")
+}
 
 criar_diretorio_imagens <- function() {
   diretorio <- "imagens2"
@@ -21,22 +26,11 @@ criar_diretorio_imagens <- function() {
   }
 }
 
-salvar_plot <- function(plot_obj, nome) {
+salvar_plot <- function(plot_obj, fold_index) {
   diretorio <- "imagens2"
-  nome_arquivo <- sprintf("%s/%s_predicao.png", diretorio, nome)
+  nome_arquivo <- sprintf("%s/%s_predicao.png", diretorio, fold_index)
   ggsave(nome_arquivo, plot_obj, width = 16, height = 10, units = "in")
 }
-
-# --- Início do Processamento ---
-
-filename <- "autuacao_mensal.csv"
-df <- read.csv(filename) 
-
-if (nrow(df) == 0) {
-  stop("O data.frame 'df' está vazio. Não é possível prosseguir.")
-}
-
-criar_diretorio_imagens()
 
 # Seleciona dados
 x <- df$valor_pago
