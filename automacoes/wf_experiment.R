@@ -1,12 +1,4 @@
 #-----------------------------------------------
-#estes códigos só funcionam nestas versões do daltoolbox e tspredit
-#install.packages("remotes")
-#remotes::install_version("daltoolbox", version = "1.1.727")
-#remotes::install_version("daltoolbox")
-#remotes::install_version("tspredit", version = "1.0.787", dependencies = FALSE)
-#remotes::install_version("tspredit")
-#install.packages("daltoobox")
-#-----------------------------------------------
 #------------------ LIBRARIES ------------------
 library(daltoolbox)
 library(daltoolboxdp)
@@ -167,7 +159,7 @@ run_ml <- function( x,
       result <- test_ml(best_model, x, test_pos=train_size+1, test_size=j, steps_ahead=1)
       results <- rbind(results, result$df)
     }
-    #save_image(result$model, 'ro')
+    save_image(result$model, 'ro')
   }
   #steps ahead (sa) -------------------------------------------
   if (stgy$sa == TRUE){
@@ -279,7 +271,7 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1) {
     index <- 1:test_size
     output <- output[index]
   }
-  
+
   # Evaluation
   obj$prediction <- as.vector(obj$prediction)
   obj$ev_prediction <- compute_performance(obj$model, obj$test, obj$prediction)
@@ -324,9 +316,10 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1) {
     )
   }
   
+  #save image
+  
   return(list(df=result, model=obj))
 }
-
 
 get_params_from_name <- function(filename_full) {
   # Divide o nome do arquivo completo usando '_'

@@ -3,10 +3,10 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(6, 12 ,24, 36, 48, 60)
+sw_size <- c(6, 12 ,24, 36, 48)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
-ranges <- list(size=1:10, decay = seq(0.1,1,0.1), maxit=1000)
+ranges <- list(input_size=NA, size=1:16, decay = seq(0.1,0.2,0.02), maxit=1000)
 params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
 
 results2 <- list()
@@ -69,7 +69,7 @@ for (ds in datasets) {
         ranges2 <- list(size = as.numeric(cases_melhor_3$params$ranges$size),
                        decay = as.numeric(cases_melhor_3$params$ranges$decay),
                        maxit = as.numeric(cases_melhor_3$params$ranges$maxit))
-        
+            
         params2 <- list(sw_size=sw_size2, preprocess=preprocess2, augment=augment2, ranges=ranges2)
         
         name2 <- get_names(filename, params2)

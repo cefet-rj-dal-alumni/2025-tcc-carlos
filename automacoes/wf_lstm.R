@@ -3,10 +3,11 @@ source('./wf_experiment.R')
 datasets <- c('autuacao_mensal')
 test_size <- 12
 
-sw_size <- c(24, 36, 48, 60)
+sw_size <- c(6, 12 ,24, 36, 48, 60)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
+preprocess <- list(ts_norm_gminmax())
 augment <- list(ts_aug_none())
-ranges <- list(epochs=1000, lr=c(0.01,0.025,0.04))
+ranges <- list(epochs=1000, lr=seq(0.0, 1, 0.025))
 params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
 
 results2 <- list()
@@ -24,7 +25,7 @@ for (ds in datasets) {
       name <- get_names(filename, cases[[i]])
       print(name)
       tryCatch({
-        novo_resultado <- run_ml(df[[ts]], name, ts_lstm(), test_size=test_size, params=cases[[i]], stgy=list(sa=TRUE, ro=FALSE))
+        novo_resultado <- run_ml(df[[ts]], name, ts_lstm(), test_size=test_size, params=cases[[i]], stgy=list(sa=TRUE, ro=FALSE, image=TRUE))
         results2 <- rbind(results2, novo_resultado)
       }, error = function(e) {
         print('erro')

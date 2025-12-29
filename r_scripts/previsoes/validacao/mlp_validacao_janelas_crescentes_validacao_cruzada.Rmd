@@ -1,0 +1,139 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(tspredit)
+
+source('./util.R')
+set.seed(120770)
+```
+
+## Carregar csv
+
+```{r}
+filename <- "autuacao_mensal_filtrada.csv"
+df <- read.csv(filename) 
+
+if (nrow(df) == 0) {
+  stop("O data.frame 'df' está vazio. Não é possível prosseguir.")
+}
+
+```
+
+## Config
+
+```{r}
+model_folder_name <- "mlpp_validacao"
+model_plot_name <- "mlp-gminmax-s1-d014-m1000"
+test_size <- 12
+sw_size <- 36
+preproc <- ts_norm_gminmax()
+
+model_config <- ts_mlp(preproc, input_size=sw_size, size=1, decay=0.14, maxit=1000)
+```
+
+## Treinamento e Teste
+
+```{r}
+## Treinamento e Teste com Validação Cruzada
+results <- data.frame()
+
+# Garantir formato de data
+df$mes_pagamento <- as.Date(df$mes_pagamento)
+
+for(sw in sw_size){
+  cat(sprintf("\n=== Processando SW %d ===\n", sw))
+  
+  x <- df$valor_pago
+  n <- length(x)
+  
+  inicio_primeiro_fold <- (sw * 2) + 1
+  fold_index <- 1
+  inicio_test <- inicio_primeiro_fold
+  
+  while(inicio_test + test_size - 1 <= n) {
+    cat(sprintf("Fold %d... ", fold_index))
+    
+    fim_train <- inicio_test - 1
+    inicio_train <- 1
+    
+    # Extrair dados e preparar série
+    x_fold <- x[inicio_train:(inicio_test + test_size - 1)]
+    ts <- ts_data(x_fold, sw)
+    samp <- ts_sample(ts, test_size = test_size)
+    
+    io_train <- ts_projection(samp$train)
+    io_test <- ts_projection(samp$test)
+    
+    # Modelo e Previsão
+    model <- model_config
+    model <- fit(model, x=io_train$input, y=io_train$output)
+    
+    adjust <- predict(model, io_train$input)
+    prediction <- predict(model, x=io_test$input[1, ], steps_ahead=test_size)
+    
+    # Avaliação
+    ev_test <- evaluate(model, as.vector(io_test$output), as.vector(prediction))
+    results <- rbind(results, data.frame(
+      sw = sw, fold = fold_index, mse = ev_test$mse, smape = ev_test$smape, r2 = ev_test$R2
+    ))
+    
+    # --- AJUSTE DO GRÁFICO ---
+    
+    # Sincronização das datas: o 'output' começa em sw + 1
+    indices_datas <- (sw + 1):(inicio_test + test_size - 1)
+    datas_grafico <- df$mes_pagamento[indices_datas]
+    
+    # Criar o plot com valores em milhões
+    plot_obj <- plot_ts_pred(y = as.vector(c(io_train$output, io_test$output)) / 1e6, 
+                             yadj = as.vector(adjust) / 1e6, 
+                             ypre = as.vector(prediction) / 1e6)
+    
+    # Solução robusta para o erro de NAs e subscrição
+    plot_obj <- plot_obj + 
+      scale_x_continuous(labels = function(i) {
+        # Arredonda e remove NAs
+        idx <- round(i)
+        idx[is.na(idx)] <- 0 
+        
+        # Cria vetor de labels vazio
+        labels <- rep("", length(idx))
+        
+        # Apenas preenche onde o índice é válido dentro do vetor datas_grafico
+        validos <- idx >= 1 & idx <= length(datas_grafico)
+        labels[validos] <- format(datas_grafico[idx[validos]], "%m/%Y")
+        
+        return(labels)
+      }) +
+      labs(
+        title = paste("SW", sw, "- Fold", fold_index),
+        x = "Mês/Ano",
+        y = "Valor Pago (Milhões R$)"
+      ) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
+
+    # Salvar
+    create_directories(model_folder_name)
+    plot_name <- paste(model_plot_name, "_janela-", sw, "_fold-", fold_index, "_plot", sep="")
+    salvar_plot(plot_obj, model_folder_name, plot_name)
+    
+    cat("OK\n")
+    
+    inicio_test <- inicio_test + test_size
+    fold_index <- fold_index + 1
+  }
+}
+```
+
+```{r}
+View(results)
+```
