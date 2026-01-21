@@ -162,8 +162,8 @@ resultados_cv <- validacao_cruzada_plot_ts(
   tam_janela_treino = TAMANHO_TREINO,
   tam_janela_teste = TAMANHO_TESTE,
   step = PASSO,
-  modelo_func = function() { ts_arima() },
-  zoom_dias_antes_previsao = 180
+  modelo_func = function() { ts_mlp() },
+  zoom_dias_antes_previsao = 12
 )
 
 # --- Análise dos Resultados ---

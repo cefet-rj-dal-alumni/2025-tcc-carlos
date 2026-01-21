@@ -115,10 +115,12 @@ for(sw in sw_size){
         return(labels)
       }) +
       labs(
-        title = paste("SW", sw, "- Fold", fold_index),
+        title = paste("MLP - Previsão", test_size, "meses"),
+        subtitle = paste("mlp - gminmax - size: 1 - decay 0.14 - maxit 1000", " - janela " , sw, " - fold ", fold_index),
         x = "Mês/Ano",
         y = "Valor Pago (Milhões R$)"
       ) +
+      theme_minimal() + 
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
 
     # Salvar

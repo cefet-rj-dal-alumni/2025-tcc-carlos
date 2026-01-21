@@ -6,7 +6,7 @@ test_size <- 12
 sw_size <- c(52)
 preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
 augment <- list(ts_aug_none())
-ranges <- list(nodesize=1:10, ntree=seq(20,100,20))
+ranges <- list(nodesize=1:10, ntree=seq(100, 500, 100))
 params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
 
 results2 <- list()

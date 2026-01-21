@@ -74,8 +74,6 @@ transformar em st
 
 ```{r}
 ts_valor_pago_total_dia <- ts_data(df_ordenado_valor_pago_total$valor_pago_total, 7)
-
-
 ```
 
 separação teste/treino

@@ -34,12 +34,12 @@ if (nrow(df) == 0) {
 ```{r}
 
 model_folder_name <- "elm_validacao"
-model_plot_name <- "elm-k5"
+model_plot_name <- "elm-nhid5"
 test_size <- 12
-sw_size <- 60
-preproc <- ts_norm_swminmax()
+sw_size <- 36
+preproc <- ts_norm_diff()
 
-model_config <- ts_elm(preproc, input_size=sw_size, nhid=9, actfun="relu")
+model_config <- ts_elm(preproc, input_size=34, nhid=5, actfun="relu")
 ```
 
 ## Treinamento e Teste
@@ -116,10 +116,12 @@ for(sw in sw_size){
         return(labels)
       }) +
       labs(
-        title = paste("SW", sw, "- Fold", fold_index),
+        title = paste("ELM - Previsão", test_size, "meses"),
+        subtitle = paste("elm - diff - nhid: 5 - actfun: relu", " - janela " , sw, " - fold ", fold_index),
         x = "Mês/Ano",
         y = "Valor Pago (Milhões R$)"
       ) +
+      theme_minimal() + 
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
 
     # Salvar

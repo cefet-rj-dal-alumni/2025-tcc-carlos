@@ -1,6 +1,11 @@
 source('./wf_experiment.R')
 
-datasets <- c('autuacao_mensal')
+if (is.null(datasets)) {
+  stop("Dataset não informado.")
+}else{
+  datasets <- c('autuacao_mensal')
+}
+
 test_size <- 12
 
 sw_size <- c(6, 12 ,24, 36, 48)

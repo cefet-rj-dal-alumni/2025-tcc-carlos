@@ -71,7 +71,21 @@ df_ordenado_valor_pago_total_mes$mes_pagamento <- as.Date(df_ordenado_valor_pago
 transformar em st
 
 ```{r}
-ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, 6)
+sw_size <- 36
+test_size <- 12
+index <- 6
+
+primeiro_treino <- index + (index - 1) * test_size 
+ultimo_treino <- primeiro_treino + sw_size - 1
+primeiro_teste <- ultimo_treino + 1
+ultimo_teste <- primeiro_teste + test_size - 1
+
+if(ultimo_teste > length(df_ordenado_valor_pago_total_mes$valor_pago_total))
+{
+  stop("ultimo teste não pode ser maior que o conjunto total")
+}
+
+ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_total, 36)
 
 
 ```
@@ -79,7 +93,6 @@ ts_valor_pago_total_mes <- ts_data(df_ordenado_valor_pago_total_mes$valor_pago_t
 separação teste/treino
 
 ```{r}
-
 samp <- ts_sample(ts_valor_pago_total_mes, test_size = 12)
 
 io_train <- ts_projection(samp$train)
@@ -93,7 +106,7 @@ modelo e ajuste
 preproc <- ts_norm_gminmax()
 
 #treinamento modelo
-model <- ts_mlp(preproc, input_size=2, size=3, decay=0)
+model <- ts_mlp(preproc, input_size=6, size=1, decay=0.1, maxit=1000)
 model <- fit(model, x=io_train$input, y=io_train$output)
 
 #ajuste
@@ -108,7 +121,7 @@ predição
 
 ```{r}
 #prediçao
-prediction <- predict(model, x=io_test$input, steps_ahead=1)
+prediction <- predict(model, x=io_test$input[1,], steps_ahead=12)
 prediction <- as.vector(prediction)
 output <- as.vector(io_test$output)
 ev_test <- evaluate(model, output, prediction)

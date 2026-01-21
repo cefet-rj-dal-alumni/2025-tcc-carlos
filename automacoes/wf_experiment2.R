@@ -148,6 +148,7 @@ run_ml <- function( x,
   fim_total_janela <- train_size + test_size
   
   while (fim_total_janela <= length(x)) {
+    
     x_fold <- x[1:fim_total_janela]
     
     # Fit

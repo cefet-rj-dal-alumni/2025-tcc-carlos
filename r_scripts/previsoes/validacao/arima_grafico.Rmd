@@ -1,0 +1,107 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+library(daltoolbox)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(tspredit)
+
+source('./util.R')
+set.seed(120770)
+```
+
+## Carregar csv
+
+```{r}
+filename <- "autuacao_mensal_filtrada.csv"
+df <- read.csv(filename) 
+
+if (nrow(df) == 0) {
+  stop("O data.frame 'df' está vazio. Não é possível prosseguir.")
+}
+
+```
+
+## Config
+
+```{r}
+## Treinamento e Teste
+
+# 1. Garantir formato de data e escala
+df$mes_pagamento <- as.Date(df$mes_pagamento)
+x <- df$valor_pago
+n <- length(x)
+
+# 2. Preparar dados (usando sw=0 conforme seu exemplo)
+sw <- 0 
+ts <- ts_data(x, sw)
+samp <- ts_sample(ts, test_size = test_size)
+
+io_train <- ts_projection(samp$train)
+io_test <- ts_projection(samp$test)
+
+# 3. Treinar modelo
+model <- model_config
+model <- fit(model, x=io_train$input, y=io_train$output)
+
+# 4. Fazer previsões
+adjust <- predict(model, io_train$input)
+prediction <- predict(model, x=io_test$input[1, ], steps_ahead=test_size)
+
+# 5. Avaliar
+ev_test <- evaluate(model, as.vector(io_test$output), as.vector(prediction))
+print(ev_test)
+
+# --- INÍCIO DO GRÁFICO EM MILHÕES ---
+
+# 6. Sincronizar Datas
+# O output da projeção termina no último registro do DF. 
+# Pegamos as últimas (length(train) + length(test)) datas do dataframe.
+y_total_obs <- as.vector(c(io_train$output, io_test$output))
+total_pontos <- length(y_total_obs)
+datas_grafico <- tail(df$mes_pagamento, total_pontos)
+
+# 7. Gerar Plot com daltoolbox ajustando para Milhões (/ 1e6)
+plot_obj <- plot_ts_pred(y = y_total_obs / 1e6, 
+                         yadj = as.vector(adjust) / 1e6, 
+                         ypre = as.vector(prediction) / 1e6)
+
+# 8. Customizar Eixo X e Y
+plot_obj <- plot_obj + 
+  scale_x_continuous(labels = function(i) {
+    idx <- round(i)
+    idx[is.na(idx)] <- 0
+    labels <- rep("", length(idx))
+    validos <- idx >= 1 & idx <= length(datas_grafico)
+    labels[validos] <- format(datas_grafico[idx[validos]], "%m/%Y")
+    return(labels)
+  }) +
+  labs(
+    title = paste("ARIMA - Previsão", test_size, "meses"),
+    x = "Mês/Ano",
+    y = "Valor Pago (Milhões R$)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    panel.grid.minor = element_blank()
+  )
+
+# 9. Salvar e Exibir
+create_directories(model_folder_name)
+plot_name <- paste(model_plot_name, "_previsao_final", sep="")
+salvar_plot(plot_obj, model_folder_name, plot_name)
+
+print(plot_obj)
+```
+
+```{r}
+View(results)
+```

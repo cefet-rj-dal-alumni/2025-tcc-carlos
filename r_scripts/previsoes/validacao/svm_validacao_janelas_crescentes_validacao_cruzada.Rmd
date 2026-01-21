@@ -32,13 +32,13 @@ if (nrow(df) == 0) {
 ## Config
 
 ```{r}
-model_folder_name <- "knn_validacao"
-model_plot_name <- "knn-k5"
+model_folder_name <- "svm_validacao"
+model_plot_name <- "svm"
 test_size <- 12
-sw_size <- 48
-preproc <- ts_norm_an()
+sw_size <- 12
+preproc <- ts_norm_ean()
 
-model_config <- ts_knn(preproc, input_size=sw_size,  k=5)
+model_config <- ts_svm(preproc, input_size=sw_size, kernel='radial', epsilon=0.01, cost=50)
 ```
 
 ## Treinamento e Teste
@@ -115,8 +115,8 @@ for(sw in sw_size){
         return(labels)
       }) +
       labs(
-        title = paste("KNN - Previsão", test_size, "meses"),
-        subtitle = paste("knn - an - k: 5", " - janela " , sw, " - fold ", fold_index),
+        title = paste("SVM - Previsão", test_size, "meses"),
+        subtitle = paste("svm - ean - kerne: radial - epsilon: 0.01 - cost: 50", " - janela " , sw, " - fold ", fold_index),
         x = "Mês/Ano",
         y = "Valor Pago (Milhões R$)"
       ) +
