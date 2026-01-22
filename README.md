@@ -6,13 +6,6 @@ TCC - Carlos Henrique
 
 [TCC2_Carlos.pdf](https://github.com/user-attachments/files/24785906/TCC2_Carlos.pdf)
 
-# TL;DR
-
-<!-- Resumo super conciso para quem não quer ler o README e começar a executar o código -->
-Para rodar:
-```$ pm2 start ecosystem.config.js```
-
-
 # Descrição Geral
 Este trabalho foi realizado com o objetivo de se obter um modelo de dados que seja capaz de prever receitas de multas de trânsito do município do Rio de Janeiro no período de um ano.
 Os dados foram disponibilizados pela Secretaria Municipal de Trânsito do Rio de Janeiro.
@@ -44,8 +37,18 @@ Caminho do csv base: ./automacoes/receitas_mensais/input/receitas_mensais.csv
 # Execução
 O arquivo run_ml.R é responsável por rodar automaticamente o test para os modelos inseridos via argumentos.
 
-Exemplo no terminal: Rscript run_ml.R autuacao_mensal2 arima,mlp,
+Exemplo no terminal: Rscript run_ml.R autuacao_mensal2 arima,mlp,knn
 
-Este comando executa automaticamente a busca em grade para obter o melhor modelo de cada um dos algoritmos desejados(arima, mlp e knn). 
+Este comando executa automaticamente a busca em grade para obter o melhor modelo de cada um dos algoritmos desejados(arima, mlp e knn).
+Os modelos disponíveis para os argumento precisam estar separados por vírgula e estão relacionados com os arquivos apresentados acima:
+mlp: rw_mlp.R
+knn: rw_knn.R
+lstm: rw_lstm.R
+svm: rw_svm.R
+rf: rw_rf.R
+conv1d: rw_conv1d.R
+elm: r2_elm.R
+arima: wf_arima.R
+
 O teste é realizado com um período de 12 meses, com a busca por hiperparâmetros pré-definidos.
 Ao final da execução, os resultados dos modelos estarão disponíveis na pasta "./automacoes/receitas_mensais/results", os gráficos em ./automacoes/receitas_mensais/graphics.
