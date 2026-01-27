@@ -83,7 +83,7 @@ Cada script de modelo é responsável por:
 
 ---
 
-## 🧪 Preparo dos Dados
+##  Preparo dos Dados
 
 O arquivo `.csv` contendo as **receitas mensais** deve estar localizado em uma pasta chamada `input`, dentro do diretório correspondente ao dataset.
 
