@@ -5,12 +5,12 @@
 **Aluno:** Carlos Henrique de Oliveira Pereira
 **Semestre de Defesa:** *(ex.: 2025-2)*
 
-📄 **Documento do TCC:**
+**Documento do TCC:**
 [TCC2_Carlos.pdf](https://github.com/user-attachments/files/24785906/TCC2_Carlos.pdf)
 
 ---
 
-## 📌 Descrição Geral
+## Descrição Geral
 
 Este Trabalho de Conclusão de Curso (TCC) tem como objetivo o desenvolvimento e a avaliação de modelos de aprendizado de máquina e séries temporais capazes de **prever a receita anual proveniente de multas de trânsito** do município do Rio de Janeiro.
 
@@ -18,7 +18,7 @@ Os dados utilizados no estudo foram disponibilizados pela **Secretaria Municipal
 
 ---
 
-## ⚙️ Funcionalidades
+## Funcionalidades
 
 A principal implementação do trabalho encontra-se na pasta **`automacoes`**, que contém os scripts responsáveis pela execução, treinamento e avaliação dos modelos.
 
@@ -37,7 +37,7 @@ Além disso, o script `run_ml.R` permite a **execução automática de múltiplo
 
 ---
 
-## 🏗️ Arquitetura do Projeto
+## Arquitetura do Projeto
 
 A estrutura geral do projeto segue a organização abaixo:
 
@@ -70,7 +70,7 @@ Cada script de modelo é responsável por:
 
 ---
 
-## 📦 Dependências
+## Dependências
 
 * **Ambiente:** RStudio 2024.12.0 ou superior
 * **Linguagem:** R
@@ -79,7 +79,7 @@ Cada script de modelo é responsável por:
   * `DALtoolbox`
   * `TSPred`
 
-> ⚠️ Certifique-se de que todas as bibliotecas estejam corretamente instaladas antes da execução dos scripts.
+>  Certifique-se de que todas as bibliotecas estejam corretamente instaladas antes da execução dos scripts.
 
 ---
 
@@ -100,7 +100,7 @@ O nome do dataset informado na execução deve coincidir com o nome da pasta que
 
 ---
 
-## ▶️ Execução
+##  Execução
 
 O script `run_ml.R` é responsável por executar automaticamente os testes para os modelos especificados via argumentos de linha de comando.
 
@@ -136,7 +136,7 @@ Durante a execução:
 
 ---
 
-## 📊 Resultados
+## Resultados
 
 Ao final da execução:
 
