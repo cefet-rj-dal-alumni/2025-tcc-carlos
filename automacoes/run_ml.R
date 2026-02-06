@@ -1,12 +1,16 @@
 # Rscript run_ml.R filname mlp,arima,knn 12
 
+source('./wf_knn.R')
+source('./wf_mlp.R')
+
+
 args <- commandArgs(trailingOnly = TRUE)
 
-datasets <- args[1]
+input_file_path <- args[1]
 models <- strsplit(args[2], ",")[[1]]
 test_size <- as.numeric(args[3])
 
-cat("Datasets:", datasets, "\n")
+cat("Datasets:", input_file_path, "\n")
 cat("Models:\n")
 print(models)
 cat("Test Size:", test_size, "\n")
@@ -18,43 +22,16 @@ for (i in seq_along(models)) {
   
   switch(model,
          
-         "arima" = {
-           env <- new.env()
-           env$datasets  <- datasets
-           source("wf_arima.R", local = env)
-         },
-         
+
          "mlp" = {
-           env <- new.env()
-           env$datasets  <- datasets
-           source("wf_mlp.R", local = env)
+           wf_mlp(test_size, input_file_path)
          },
-         
+
          "knn" = {
-           env <- new.env()
-           env$datasets  <- datasets
-           source("wf_knn.R", local = env)
+           wf_knn(test_size, input_file_path)
          },
          
-         "lstm" = {
 
-         },
-         
-         "conv1d" = {
-           
-         },
-         
-         "elm" = {
-           
-         },
-         
-         "svm" = {
-           
-         },
-
-         "rf" = {
-           
-         },
          
          {
            warning(paste("Modelo desconhecido:", model))
