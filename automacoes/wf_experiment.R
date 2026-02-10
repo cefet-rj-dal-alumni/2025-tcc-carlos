@@ -326,6 +326,7 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
     clean_filename <- basename(obj$filename) 
     final_path <- file.path(folder, paste0(clean_filename, ".rds"))
     saveRDS(obj$model, file = final_path)
+    print(sprintf('Modelo %s salvo com sucesso.', obj$filename))
   }
   
   return(list(df=result, model=obj))

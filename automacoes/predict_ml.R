@@ -15,9 +15,14 @@ args <- commandArgs(trailingOnly = TRUE)
 target_path <- args[1]
 model_path <- args[2]
 predict_size <- as.numeric(args[3])
-window_size <- 36
+
+janela <- sub(".*sw-([0-9]+).*", "\\1", model_path) 
+window_size <- as.integer(janela)
+print(window_size)
+window_size <- 35
 
 #----------------------------------------
+
 
 model <- readRDS(model_path)
 df <- read.csv(target_path)

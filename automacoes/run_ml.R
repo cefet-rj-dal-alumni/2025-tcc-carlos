@@ -2,6 +2,8 @@
 
 source('./wf_knn.R')
 source('./wf_mlp.R')
+source('./wf_lstm.R')
+source('./wf_elm.R')
 
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -21,7 +23,6 @@ for (i in seq_along(models)) {
   cat("Executando modelo:", model, "\n")
   
   switch(model,
-         
 
          "mlp" = {
            wf_mlp(test_size, input_file_path)
@@ -29,6 +30,14 @@ for (i in seq_along(models)) {
 
          "knn" = {
            wf_knn(test_size, input_file_path)
+         },
+         
+         "elm" = {
+           wf_elm(test_size, input_file_path)
+         },
+         
+         "lstm" = {
+          wf_lstm(test_size, input_file_path)
          },
          
 

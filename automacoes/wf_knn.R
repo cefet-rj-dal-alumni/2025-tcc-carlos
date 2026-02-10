@@ -50,13 +50,13 @@ wf_knn <- function(test_size, datasets){
         # Ordenar por R² decrescente
         results2_ordenado <- results2[order(-results2$r2), ]
         
-        melhores_3 <- head(results2_ordenado, 3)
+        melhor_modelo <- head(results2_ordenado, 1)
         
         # Rodar run_ml_with_image para os 3 melhores
         cases_melhor_3 <- list()
-        
-        for (j in 1:nrow(melhores_3)) {
-          cases_melhor_3 <- get_params_from_name(melhores_3$instance[j])
+
+        for (j in 1:nrow(melhor_modelo)) {
+          cases_melhor_3 <- get_params_from_name(melhor_modelo$instance[j])
           
           sw_size2 <- c(cases_melhor_3$params$sw_size)
           
@@ -78,7 +78,7 @@ wf_knn <- function(test_size, datasets){
           
           name2 <- get_names(filename, params2)
           
-          run_ml(df[[ts]], name2, ts_knn(), test_size=test_size, params=params2, stgy=list(sa=TRUE, ro=FALSE, image=TRUE))
+          run_ml(df[[ts]], name2, ts_knn(), test_size=test_size, params=params2, stgy=list(sa=TRUE, ro=FALSE, image=TRUE), save_model=TRUE)
         }
       }
       
