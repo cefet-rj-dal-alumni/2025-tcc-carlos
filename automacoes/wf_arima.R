@@ -1,22 +1,17 @@
 source('./wf_experiment.R')
 
-if (is.null(datasets)) {
-  stop("Dataset não informado.")
-}else{
-  datasets <- c('autuacao_mensal')
-}
+wf_arima <- function(test_size, datasets){
 
-test_size <- 12
-
-results2 <- list()
-for (ds in datasets) {
-  create_directories(sub('-.*', '', ds))
-  df <- read.csv(sprintf('%s/input/%s.csv', sub('-.*', '', ds), ds))
-  for (ts in colnames(df)) {
-    filename <- sprintf('%s/%s_%s', sub('-.*', '', ds), ts, 'arima')
-    print(filename)
-    novo_resultado <- run_ml(df[[ts]], filename, ts_arima(), test_size=test_size, stgy=list(sa=TRUE, ro=FALSE, image=TRUE))
-    results2 <- rbind(results2, novo_resultado)
+  results2 <- list()
+  for (ds in datasets) {
+    create_directories('output')
+    df <- read.csv(ds)
+    for (ts in colnames(df)) {
+      filename <- sprintf('%s/%s_%s', sub('-.*', '', 'output'), ts, 'arima')
+      print(filename)
+      novo_resultado <- run_ml(df[[ts]], filename, ts_arima(), test_size=test_size, stgy=list(sa=TRUE, ro=FALSE, image=TRUE), save_model = TRUE)
+      results2 <- rbind(results2, novo_resultado)
+    }
   }
 }
 

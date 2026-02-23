@@ -5,7 +5,7 @@ wf_elm <- function(test_size, datasets){
   #sw_size <- c(6, 12, 24, 36, 48)
   sw_size <- c(36)
   #preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
-  preprocess <- list(ts_norm_an())
+  preprocess <- list(ts_norm_an() ,ts_norm_ean())
   augment <- list(ts_aug_none())
   #ranges <- list(nhid=1:18, actfun=c('sig','relu','purelin'))
   ranges <- list(nhid=16:18, actfun=c('sig','relu','purelin'))

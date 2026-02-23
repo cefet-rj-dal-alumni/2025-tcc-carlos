@@ -3,10 +3,13 @@ source('./wf_experiment.R')
 
 wf_mlp <- function(test_size, datasets){
 
-  sw_size <- c(6, 12 ,24, 36, 48)
-  preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
+  #sw_size <- c(6, 12 ,24, 36, 48)
+  sw_size <- c(36, 48)
+  #preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
+  preprocess <- list(ts_norm_an(), ts_norm_ean())
   augment <- list(ts_aug_none())
-  ranges <- list(input_size=NA, size=1:16, decay = seq(0.1,0.2,0.02), maxit=1000)
+  #ranges <- list(input_size=NA, size=1:16, decay = seq(0.1,0.2,0.02), maxit=1000)
+  ranges <- list(input_size=NA, size=16, decay = c(0.1,0.2), maxit=1000)
   params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
   
   results2 <- list()
