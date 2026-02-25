@@ -1,3 +1,6 @@
+
+#conv1d com erro de compatibilidade
+
 source('./wf_knn.R')
 
 library(daltoolbox)
@@ -16,24 +19,25 @@ target_path <- args[1]
 model_path <- args[2]
 predict_size <- as.numeric(args[3])
 
-janela <- sub(".*sw-([0-9]+).*", "\\1", model_path) 
-window_size <- as.integer(janela)
-print(window_size)
-window_size <- 35
-
 #----------------------------------------
 
 
-model <- readRDS(model_path)
+model <- tryCatch({
+  model <- readRDS(model_path)
+}, error = function(e) {
+  stop(paste("Erro ao carregar o modelo: ", e$message))
+})
+
+window_size <- model$input_size
+
 df <- read.csv(target_path)
 
 idx_numerico <- which(sapply(df, is.numeric))[1]
 dados_serie <- df[, idx_numerico]
-
-ultimos_dados <- tail(dados_serie, window_size)
+ultimos_dados <- tail(dados_serie, window_size + predict_size - 1)
 ts_input <- ts_data(ultimos_dados, window_size)
-
-prediction <- predict(model, ts_input, steps_ahead = predict_size)
+ts_input <- ts_projection(ts_input)
+prediction <- predict(model, x=ts_input$input[1,], steps_ahead = predict_size)
 prediction_vector <- as.vector(prediction)
 
 if (!file.exists('output/prediction')){
@@ -70,6 +74,6 @@ plot_previsao <- ggplot(df_plot, aes(x = x, y = y, color = tipo)) +
        x = "Pontos no Tempo", y = "Valor", color = "Legenda")
 
 ggsave("output/prediction/plot_previsao.png", plot_previsao, width = 10, height = 6, dpi = 300)
-print(model$model)
+
 print("Previsão gerada com sucesso:")
 print(prediction_vector)

@@ -3,7 +3,7 @@ source('./wf_experiment.R')
 wf_knn <- function(test_size, datasets){
   
   #sw_size <- c(6, 12 ,24, 36, 48)
-  sw_size <- c(6)
+  sw_size <- c(36)
   preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
   augment <- list(ts_aug_none())
   #ranges <- list(k=c(3:36))

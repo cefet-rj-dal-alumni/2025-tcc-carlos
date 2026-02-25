@@ -142,7 +142,7 @@ run_ml <- function( x,
                     stgy = list(ro=TRUE, sa=TRUE, image=FALSE),
                     save_model = FALSE
                     ) {
-  # Fit
+  # fit ----
   train_size <- length(x)-test_size
   model <- wf_experiment(filename, base_model)
   best_model <- train_ml(model, x[1:train_size], params)
@@ -260,6 +260,7 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
   xwt <- na.omit(xwt)
   xyt <- ts_projection(xwt)    
   output <- as.vector(xyt$output)
+
 
   # Testing
   if (steps_ahead == 1)  {
