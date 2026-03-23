@@ -48,9 +48,24 @@ carregar_modelo <- function(caminho_rds) {
     # Carrega as funções Python da biblioteca correta
     if (grepl("conv1d", tag)) {
       py_file <- system.file("python", "ts_conv1d.py", package="daltoolboxdp")
-      source_python(py_file)
-      message(sprintf("Recriando arquitetura Conv1D para input_size=%d ...", meta$input_size))
-      model$model <- ts_conv1d_create(meta$input_size, meta$input_size)
+      
+      py_lines <- readLines(py_file)
+      py_lines <- gsub(
+        "self.feature_extractor(torch.rand(1, input_dim))",
+        "self.feature_extractor(torch.rand(1, in_channels, input_dim))",
+        py_lines,
+        fixed = TRUE
+      )
+      
+      tmp_py <- tempfile(fileext = ".py")
+      writeLines(py_lines, tmp_py)
+      source_python(tmp_py)
+      
+      # in_channels is ALWAYS 1 (the permute in ts_conv1d_fit makes it so)
+      # input_dim   is the window size (number of lagged features)
+      message(sprintf("Recriando Conv1D: in_channels=1, input_dim=%d", meta$input_size))
+      model$model <- ts_conv1d_create(as.integer(1),
+                                      as.integer(meta$input_size))
     } else {
       py_file <- system.file("python", "ts_lstm.py", package="daltoolboxdp")
       source_python(py_file)
@@ -80,14 +95,18 @@ processar_previsao <- function(caminho_modelo, tag_algoritmo, target_path, predi
   model <- carregar_modelo(caminho_modelo)
   window_size <- model$input_size
   
+  
+  
   #Verificar se é modelo aprendizado profundo
-  model_dp <- Filter(function(k) grepl(k, caminho_modelo, ignore.case=TRUE), c("lstm"))
+  model_dp <- Filter(function(k) grepl(k, caminho_modelo, ignore.case=TRUE), c("lstm", "conv1d"))
   model_dp <- if (length(model_dp) > 0) model_dp[1] else NA
   if (!is.na(model_dp)) window_size <- window_size + 1 # verifica se é modelo de aprendizado profundo
 
   df <- read.csv(target_path)
   idx_numerico <- which(sapply(df, is.numeric))[1]
   dados_serie <- df[, idx_numerico]
+
+
   
   if (!is.null(window_size) && window_size != 0) {
     ultimos_dados <- tail(dados_serie, window_size + predict_size - 1)
@@ -99,7 +118,7 @@ processar_previsao <- function(caminho_modelo, tag_algoritmo, target_path, predi
     ts_input  <- ts_data(ultimos_dados)
     ts_input  <- ts_projection(ts_input)
   }
-  
+
   # Predição
   prediction <- predict(model, x=ts_input$input[1,], steps_ahead = predict_size)
   prediction_vector <- as.vector(prediction)

@@ -353,13 +353,6 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
   return(list(df=result, model=obj))
 }
 
-
-
-
-
-
-
-
 get_params_from_name <- function(filename_full) {
   # Divide o nome por "_"
   parts <- strsplit(filename_full, "_")[[1]]
