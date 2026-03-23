@@ -2,12 +2,12 @@ source('./wf_experiment.R')
 wf_conv1d <- function(test_size, datasets){
   
   #sw_size <- c(6, 12, 24, 36, 48)
-  sw_size <- c(6, 48)
+  sw_size <- c(48)
   #preprocess <- list(ts_norm_an(), ts_norm_ean(), ts_norm_gminmax(), ts_norm_swminmax(), ts_norm_diff())
-  preprocess <- list(ts_norm_an(), ts_norm_ean())
+  preprocess <- list(ts_norm_an())
   augment <- list(ts_aug_none())
   #ranges <- list(epochs=1000, lr = seq(0.01, 0.05, 0.02))
-  ranges <- list(epochs=1000, lr = c(0.01, 0.05))
+  ranges <- list(epochs=1000, lr = c(0.05))
   params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
   
   results2 <- list()

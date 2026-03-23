@@ -260,8 +260,6 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
   xwt <- na.omit(xwt)
   xyt <- ts_projection(xwt)    
   output <- as.vector(xyt$output)
-
-
   # Testing
   if (steps_ahead == 1)  {
     strategy <- 'ro'
@@ -273,20 +271,17 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
     index <- 1:test_size
     output <- output[index]
   }
-
   # Evaluation
   obj$prediction <- as.vector(obj$prediction)
   obj$ev_prediction <- compute_performance(obj$model, obj$test, obj$prediction)
   
-  
   # Results
   experiment <- strsplit(obj$filename, '_')[[1]]
   
-  
-    
   if (FALSE) {
     encoder <- obj$model$encoder
-    result <- data.frame( instance = sub('^[^_]*_[^_]*_', '', obj$filename),
+    result <- data.frame( name = as.character(describe(obj$base_model)),
+                          instance = sub('^[^_]*_[^_]*_', '', obj$filename),
                           dataset = sub('/.*', '', experiment[2]),
                           ts = sub('^.*?/', '', experiment[1]),
                           model = experiment[3],
@@ -300,11 +295,9 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
                           mse = obj$ev_prediction$mse[index],
                           smape = obj$ev_prediction$smape[index],
                           r2 = obj$ev_prediction$r2[index] )
-  }
-  else
-  {
-    # Results - APENAS médias
+  } else {
     result <- data.frame( 
+      name = as.character(describe(obj$base_model)),
       instance = sub('^[^_]*_[^_]*_', '', obj$filename),
       dataset = sub('/.*', '', experiment[2]),
       ts = sub('^.*?/', '', experiment[1]),
@@ -320,18 +313,52 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
     )
   }
   
-
-  if (save_model == TRUE){
+  KERAS_MODELS <- c("lstm", "conv1d")
+  
+  if (save_model == TRUE) {
     folder <- "output/models"
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
-    clean_filename <- basename(obj$filename) 
-    final_path <- file.path(folder, paste0(clean_filename, ".rds"))
+    
+    clean_filename <- basename(obj$filename)
+    final_path     <- file.path(folder, paste0(clean_filename, ".rds"))
+    
+    tag_algoritmo <- tolower(clean_filename)
+    is_keras      <- any(sapply(KERAS_MODELS, function(k) grepl(k, tag_algoritmo)))
+    
+    if (is_keras) {
+      library(reticulate)
+      torch <- import("torch")
+      
+      pt_path <- file.path(folder, paste0(clean_filename, ".pt"))
+      torch$save(obj$model$model$state_dict(), pt_path)
+      message(sprintf("Pesos PyTorch salvos em: %s", pt_path))
+      
+      # Salva metadados para reconstrução na carga
+      meta_path <- file.path(folder, paste0(clean_filename, "_meta.rds"))
+      meta <- list(
+        input_size  = obj$model$input_size,
+        sw_size     = obj$sw_size,
+        preprocess  = obj$preprocess,
+        augment     = obj$augment,
+        model_class = class(obj$model)
+      )
+      saveRDS(meta, file = meta_path)
+      message(sprintf("Metadados salvos em: %s", meta_path))
+    }
+    
     saveRDS(obj$model, file = final_path)
-    print(sprintf('Modelo %s salvo com sucesso.', obj$filename))
+    print(sprintf("Modelo %s salvo com sucesso.", obj$filename))
   }
   
   return(list(df=result, model=obj))
 }
+
+
+
+
+
+
+
 
 get_params_from_name <- function(filename_full) {
   # Divide o nome por "_"

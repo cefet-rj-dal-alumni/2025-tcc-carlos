@@ -36,3 +36,5 @@ samp <- ts_sample(ts_valor_pago_total_mes, test_size = 12)
 
 io_train <- ts_projection(samp$train)
 io_test <- ts_projection(samp$test)
+
+
