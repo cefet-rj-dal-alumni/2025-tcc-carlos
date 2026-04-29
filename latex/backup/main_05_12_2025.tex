@@ -1,0 +1,453 @@
+\documentclass[12pt]{tcc} 
+\usepackage[brazil]{babel} 
+\usepackage[T1]{fontenc}
+\usepackage{datetime2}
+\DTMsetdatestyle{ddmmyyyy}
+\usepackage[acronym, nomain]{glossaries}
+
+\newacronym{ARIMA}{ARIMA}{AutoRegressive Integrated Moving Average}
+\newacronym{ARMA}{ARMA}{AutoRegressive Moving Average}
+\newacronym{PPA}{PPA}{Plano Plurianual}
+\newacronym{LDO}{LDO}{Lei de Diretrizes Orçamentárias}
+\newacronym{LOA}{LOA}{Lei Orçamentária Anual}
+\newacronym{MMS}{MMS}{Média Móvel Simples}
+\newacronym{SOF}{SOF}{Secretaria de Orçamento Federal}
+\newacronym{SETTRAN}{SETTRAN}{Secretaria Municipal de Trânsito e Transportes}
+\newacronym{SMTR}{SMTR}{Secretaria Municipal de Trânsito do Rio de Janeiro}
+\newacronym{SMAPE}{SMAPE}{Symmetric Mean Absolute Percentage Error}
+\newacronym{MSE}{MSE}{Mean Squared Error}
+\newacronym{R2}{$R^2$}{R-Squared}
+
+\usepackage{graphicx}
+\usepackage{comment}
+\usepackage{soul}
+
+\graphicspath{{./figures/}}
+
+\newcommand\dtitle{Previsão de Receitas de Multas de Trânsito do Município do Rio de Janeiro}
+\newcommand\dauthor{Carlos Henrique de Oliveira Pereira}
+\newcommand\dadvisor{Eduardo Soares Ogasawara, D.Sc.\\Boris Marinho Ramos Silva Araujo}
+
+\makeglossaries
+
+\newacronym{TCC}{TCC}{Trabalho de Conclusão de Curso}
+
+\begin{document}
+\pagenumbering{gobble}
+\pagenumbering{roman}
+
+\dcover
+
+\dcoverback
+
+\dlibrary{ficha.pdf}
+
+\ddedicatory{
+	\raggedleft \normalsize 
+Dedico este trabalho:
+
+\vspace{0.5cm}
+
+\noindent Aos meus familiares, pelo apoio incondicional e pela paciência nos momentos desafiadores, que foram pilares fundamentais ao longo da minha trajetória.
+
+\vspace{0.5cm}
+
+\noindent Aos meus professores e orientadores, pela transmissão de conhecimento, pelo incentivo constante e pela orientação que possibilita a realização desta conquista.
+
+\vspace{0.5cm}
+
+\noindent Aos meus amigos, pelas risadas que trazem leveza, pelas palavras de incentivo nos momentos de dúvida e pela companhia presente nos instantes de descontração, essenciais para manter o equilíbrio e a motivação.
+
+\vspace{1cm} 
+
+\noindent Esta conquista também é fruto do apoio de cada um de vocês.
+
+\vspace{2cm} 
+
+\hfill Com gratidão, \\
+\hfill Carlos Henrique de Oliveira Pereira.
+}
+
+\dacknowledgment{
+	Agradece-se à CAPES, CNPq e FAPERJ pelo financiamento parcial desta pesquisa.
+}
+
+\dresumo{
+O financiamento de investimentos realizados por órgãos de mobilidade urbana é crítico, pois, mesmo gerando impactos positivos com melhorias em sinalizações e estruturas viárias, pode prejudicar a instituição quando feito sem planejamento adequado. Parte das receitas dessas instituições provém de multas de trânsito, o que torna relevante o estudo de técnicas de previsão de receitas futuras para um planejamento mais preciso. Neste estudo, são realizados experimentos com séries temporais processadas em dois fluxos distintos. Em um, as séries são transformadas em versões suavizadas; no outro, em séries com agregação temporal. O objetivo é investigar o impacto dessas transformações no desempenho da previsão de receitas do município do Rio de Janeiro, com base nas métricas de erro SMAPE, $R^2$ e MSE. O conjunto de dados foi disponibilizado pela Secretaria Municipal de Transportes do Rio de Janeiro, e os experimentos são conduzidos com o modelo Auto ARIMA do pacote TSPredict.
+}{Séries temporais; Agregação temporal; Suavização; Previsão de receitas; Multas de trânsito.}
+
+\dabstract{
+Funding for investments made by urban mobility agencies is critical because, even though it generates positive impacts through improvements in signage and road infrastructure, it can harm the institution if carried out without proper planning. A portion of these institutions' revenues comes from traffic fines, making the study of revenue forecasting techniques for future periods relevant for more accurate planning. In this study, experiments are conducted on time series processed in two distinct workflows. In one workflow, the time series are transformed into smoothed series; in the other, into temporally aggregated series. The objective of this study is to investigate the impact of these transformations on the performance of revenue forecasting for the city of Rio de Janeiro, based on the SMAPE, $R^2$, and MSE error metrics. The dataset was provided by the Rio de Janeiro Municipal Transportation Department, and the experiments are conducted using the Auto ARIMA model from the TSPredict package.
+}{Time series; Temporal aggregation; Time series smoothing; Revenue forecasting; Traffic fines.}
+
+\dtables
+
+\pagenumbering{arabic}
+\justifying
+
+\chapter{Introdução}
+\label{sec:introducao}
+
+O modelo orçamentário brasileiro vigente foi consolidado com a Constituição Federal de 1988 e tem como objetivo o planejamento e o gerenciamento das finanças públicas do país \citep{deputados_constituicao_2025}. Ele é composto por três elementos-base: o \gls{PPA}, a \gls{LDO} e a \gls{LOA}. O \gls{PPA} estabelece as diretrizes, os objetivos e as metas de médio prazo da administração pública, orientando anualmente, de forma conjunta, a \gls{LDO} e a \gls{LOA}. A \gls{LDO} define os parâmetros necessários para a alocação de recursos no orçamento anual, assegurando a realização das metas e dos objetivos contemplados no \gls{PPA}. A \gls{LOA} permite estimar receitas e fixar despesas, viabilizando análises sobre a origem e a destinação dos recursos públicos. Dessa forma, a legislação brasileira orienta os órgãos públicos a cumprirem as metas e os objetivos estabelecidos.
+
+O orçamento é um documento central da política que viabiliza a execução de programas governamentais destinados a beneficiar a sociedade e promover melhorias no país \citep{speeden_fatores_2019}. O município é o ente subnacional mais capacitado para solucionar problemas locais, pois possui o conhecimento mais preciso sobre suas prioridades e os impactos das demandas sociais de sua população \citep{louzano_causalidade_2019}. No contexto da mobilidade urbana, o orçamento é planejado com foco em melhorias nas vias públicas, na sinalização viária, na implementação de novas rotas de trânsito, no subsídio tarifário ao transporte público, entre outras intervenções voltadas à circulação, à segurança viária e à promoção da mobilidade urbana. A arrecadação de multas de trânsito, por exemplo, é uma fonte de receita substancial para o setor, somando mais de 304 milhões no Rio de Janeiro em 2024, de acordo com dados da prefeitura \citep{limaNetoRJMultasArrecadacaoGlobo}.
+
+Um planejamento orçamentário adequado é essencial para viabilizar o financiamento dos serviços e dos programas públicos \citep{nascimento_fatores_2022}. A maior precisão na previsão das receitas públicas traz benefícios para a gestão da mobilidade urbana, pois contribui para a estabilidade do financiamento e reduz o risco de descontinuidade das ações planejadas \citep{da2017orccamento}. Previsões mais precisas de receita favorecem a execução orçamentária e aumentam a estabilidade no financiamento das despesas previstas na \gls{LOA}.
+
+Este trabalho investiga a seguinte questão: em que medida as transformações de suavização ou agregação temporal impactam o desempenho preditivo do modelo Auto \gls{ARIMA} na previsão de receitas de multas de trânsito do município do Rio de Janeiro? O estudo considera horizontes de previsão de poucos meses, em função da aplicabilidade prática no contexto do planejamento orçamentário municipal. Assim, os experimentos são executados com métodos de transformação de séries temporais, comparando abordagens de agregação temporal e de suavização por \gls{MMS}. A série apresenta mudanças abruptas de comportamento no período entre 2020 e 2022, possivelmente explicadas por alterações legislativas durante a pandemia de COVID-19, porém não se aplicaram técnicas de modelagem de rupturas estruturais devido à baixa frequência do evento e à dificuldade de parametrização adequada.
+
+As abordagens de suavização e agregação são adotadas para investigar seus efeitos sobre a acurácia preditiva do modelo Auto ARIMA, tendo em vista a presença de ruídos e variações abruptas na série de receitas. A agregação temporal consiste no agrupamento das receitas em um intervalo prolongado (por exemplo, semana, mês ou ano), enquanto a suavização por média móvel é um método em que uma observação da série temporal é transformada para representar a média de seus $n$ vizinhos. O critério AIC é utilizado como medida de qualidade de ajuste entre modelos \gls{ARIMA}, por penalizar complexidade excessiva e favorecer parcimônia na modelagem \citep{hyndman_automatic_2008}.
+
+Quanto às métricas de avaliação dos resultados obtidos, observa-se que a série temporal com suavização de $k=1$, ou seja, a série sem qualquer transformação, apresenta valor de \gls{R2} mais elevado em comparação com as demais séries. Também se verifica que, à medida que o grau de suavização aumenta, o valor do \gls{SMAPE} diminui. Não se obtiveram conclusões quanto à métrica \gls{MSE}.
+
+\Comment{
+Embora estudos recentes tenham aplicado modelos ARIMA para previsão de receitas públicas com resultados satisfatórios [referência específica], observa-se que
+}
+Embora diversas pesquisas apresentem bons resultados ao prever receitas públicas com modelos \gls{ARIMA}, o conjunto de dados utilizado apresenta uma variação atípica que pode impactar negativamente o desempenho do modelo. Apesar da quebra estrutural da série, é possível que existam métodos mais eficazes para essa tarefa. Utilizar modelos mais sofisticados, como Redes Neurais, Long Short-Term Memory (LSTM), k-Nearest Neighbors, entre outros, pode ser vantajoso. Portanto, recomenda-se o estudo de novos métodos para previsão de receitas, especificamente para esta série temporal.
+
+Além da introdução, este trabalho está organizado em mais quatro capítulos. O Capítulo \ref{sec:fund_teorica} apresenta a fundamentação teórica. O Capítulo \ref{sec:trabalhos_relacionados}, os trabalhos relacionados. O Capítulo \ref{sec:metodologia}, o método. Por fim, o Capítulo \ref{sec:consideracoes_parciais}, as considerações parciais.
+
+\chapter{Fundamentação teórica}
+\label{sec:background}
+\label{sec:fund_teorica}
+
+Este capítulo apresenta os conceitos essenciais para o entendimento deste trabalho. A Seção \ref{sec:series_temporais} resume os elementos fundamentais de uma série temporal. A Seção \ref{sec:indicadores_desempenho} descreve os indicadores de desempenho, importantes para a compreensão e interpretação dos resultados preliminares. A Seção \ref{sec:arima} explica o \gls{ARIMA}, modelo de previsão amplamente utilizado em séries temporais. A Seção \ref{eq:media_movel} resume a \gls{MMS}, técnica utilizada para suavizar séries temporais. A Seção \ref{sec:agregacao_temporal} apresenta a agregação temporal, técnica que transforma a série a partir do agrupamento de observações próximas.
+
+\section{Séries Temporais}
+\label{sec:series_temporais}
+
+Uma série temporal é uma sequência $(x_1, x_2, \dots, x_n)$ separada por um intervalo fixo de tempo (por exemplo, segundos, horas ou dias). Esses dados podem ser agregados em intervalos maiores, como quinzenas, semanas ou trimestres \citep{gujarati_basic_2003}. As séries temporais podem ser univariadas, quando há observações de apenas uma variável, ou multivariadas, quando há observações de duas ou mais variáveis. No caso multivariado, podem ser exploradas relações entre as variáveis para aumentar o desempenho do modelo \citep{silvestrini2008temporal}. 
+
+É possível decompor uma série temporal em três componentes: tendência, sazonalidade e resíduo. Cada componente contém informações relevantes sobre o comportamento da série, auxiliando em análises mais precisas e na identificação de padrões \citep{ogasawara_event_2025}.
+
+A tendência é a componente que indica o movimento da série temporal ao longo do tempo. Ela revela se a série é crescente, decrescente ou estável em determinado intervalo \citep{ogasawara_event_2025}. Um exemplo de tendência crescente é o uso de inteligências artificiais generativas nos últimos anos.
+
+A sazonalidade representa padrões que se repetem em intervalos regulares, como dias, meses ou anos. Esses padrões são frequentemente observados em setores de vendas, por exemplo. O aumento da demanda por presentes no período natalino é um exemplo característico dessa componente \citep{ogasawara_event_2025, zellner_seasonal_1978}.
+
+O resíduo refere-se ao que permanece após a remoção da tendência e da sazonalidade. Trata-se das variações não explicadas pelos demais componentes, mas que ainda compõem parte relevante das observações. A decomposição auxilia na análise e na compreensão da estrutura da série temporal, assegurando que as variações desordenadas permaneçam apenas nos resíduos \citep{ogasawara_event_2025}.
+
+A série é dita estacionária quando sua tendência e sazonalidade são nulas. Isso significa que seus valores não estão correlacionados com o tempo e que sua média e variância são constantes. Esse comportamento também pode ser denominado ruído branco \citep{hyndman_forecasting_2018,sato_gerenciamento_2013}.
+
+Como o modelo \gls{ARIMA} requer estacionaridade, procedimentos como diferenciação e suavização são frequentemente aplicados para eliminar tendência e sazonalidade, estabilizando a média e variância da série\citep{sato_gerenciamento_2013}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{decomposicao_exemplo2.png}
+    \caption{Exemplo de decomposição}
+    \label{fig:Exempo de um série temporal decomposta}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/serie_temporal_estacionaria_exemplo1.png}
+	\caption{Exemplo de série temporal estacionária. A linha tracejada indica a média da série temporal.}
+	\label{fig:exemplo}
+\end{figure}
+
+\section{Indicadores de desempenho}
+\label{sec:indicadores_desempenho}
+
+Em todo modelo preditivo, é necessário analisar seu desempenho e compará-lo com outros modelos para obter resultados confiáveis \citep{hyndman_forecasting_2018}. Há diversos métodos para avaliar o desempenho desses modelos. Neste trabalho, utilizam-se três métricas: \acrshort{MSE}, \acrshort{SMAPE} e o Coeficiente de Determinação (\acrshort{R2}).
+
+Para as equações a seguir, $n$ é o número de previsões, $y_t$ é a observação original, $\hat{y}_t$ é a previsão da série, e $t$ representa o tempo.
+
+Representado pela fórmula \ref{eq:smape}, o \acrfull{SMAPE} é uma métrica baseada na porcentagem do erro. Essa métrica é útil para valores com grande variação de escala. Seu resultado pode variar de \( 0 \), quando não há erro, até \( +\infty \), indicando o pior caso nas previsões \citep{ogasawara_event_2025}.
+
+O \acrfull{MSE} é uma métrica calculada na mesma escala dos dados. Como mostrado na fórmula \ref{eq:mse}, é sensível a outliers devido à operação de elevação ao quadrado \citep{chen_new_2017}. Pode variar de \( 0 \), em caso de erro nulo, até \( +\infty \), sendo que valores mais altos indicam pior desempenho.
+
+Definido pela fórmula \ref{eq:rsquared}, o \acrfull{R2} é uma métrica que mede a proporção da variabilidade da variável dependente explicada pelo modelo \citep{chicco_coefficient_2021}. Em outras palavras, avalia o grau de ajuste entre os dados previstos e os dados observados. Pode variar de \( -\infty \) a \( 1 \), sendo que valores próximos de 1 indicam bom ajuste. Quando ${R^2} = 1$, o modelo representa perfeitamente os dados reais. Valores positivos indicam ajuste satisfatório, enquanto valores negativos indicam ajuste inadequado.
+
+\begin{equation}
+\text{SMAPE} = \frac{100}{n} \sum_{t=1}^{n} \frac{\left| y_t - \hat{y}_t \right|}{(\left| y_t \right| + \left| \hat{y}_t \right|)/2}
+\label{eq:smape}
+\end{equation}
+
+\begin{equation}
+\text{MSE} = \frac{1}{n} \sum_{t=1}^{n} (\hat{y}_t - y_t)^2
+\label{eq:mse}
+\end{equation}
+
+\begin{equation}
+\boldsymbol{R^2} = 1 - \frac{\sum_{t=1}^{n} (\hat{y}_t - y_t)^2}{\sum_{t=1}^{n} (\bar{y} - y_t)^2}
+\label{eq:rsquared}
+\end{equation}
+
+Enquanto o \gls{MSE} mede o desempenho de forma relativa e dependente da escala, penalizando fortemente outliers, o \gls{SMAPE}, por ser percentual, apresenta maior robustez frente a variações de escala, tornando-se sensível em séries com alta dispersão. A análise combinada de \gls{SMAPE}, \gls{MSE} e \gls{R2} permite avaliar a acurácia, a variabilidade e o grau de explicação da previsão, sendo necessária para a interpretação crítica do desempenho preditivo \citep{hyndman_forecasting_2018}.
+
+\section{Critério AIC}
+\label{sec:aic}
+
+
+
+
+\section{Arima}
+\label{sec:arima}
+
+Denominado extensivamente como \acrlong{ARIMA}, o \gls{ARIMA} é um modelo autorregressivo de previsão amplamente utilizado desde sua criação, em 1970, por George Box e Gwilym Jenkins. Seu funcionamento baseia-se na identificação de padrões nos dados para a obtenção de operadores que, combinados, formam uma equação linear representativa da série temporal \citep{BoxJenkins1970}. No modelo \textit{ARIMA}($p$, $d$, $q$), $p$ representa o grau da parte autorregressiva, $d$ o grau da diferenciação e $q$ o grau da parte de média móvel \citep{sato_gerenciamento_2013, hyndman_automatic_2008}. Dependendo dos valores desses parâmetros, o modelo apresenta configurações específicas. Um exemplo é o ARIMA(0, 1, 0), conhecido como \textit{Random Walk}. O \textit{Auto ARIMA} é uma função que determina automaticamente os valores de $p$, $d$ e $q$ com base no melhor valor do AIC, critério utilizado para avaliar a qualidade de modelos estatísticos \citep{hyndman_automatic_2008}.
+
+Esse modelo é utilizado preferencialmente com séries estacionárias. Quando a série não é estacionária, aplica-se a diferenciação, que consiste no cálculo da diferença entre observações consecutivas. Também é possível aplicar a diferenciação sazonal, calculada em intervalos equivalentes ao ciclo de sazonalidade. A aplicação da diferenciação estabiliza a média da série e reduz ou elimina a tendência e a sazonalidade \citep{hyndman_forecasting_2018}.
+
+\section{Média Móvel Simples}
+\label{sec:media_movel_simples}
+
+A \acrfull{MMS} é uma técnica utilizada para suavizar séries temporais. Dado um número $n$, calcula-se a média aritmética das $n$ observações vizinhas a uma observação $x_i$ \citep{hansun_new_2013}. Quanto maior o valor de $n$, maior a suavização e menor a preservação da informação original da série. A suavização por média móvel visa reduzir a variabilidade local da série, minimizando a influência de ruídos e outliers na estimação dos parâmetros do modelo. 
+
+Representado pela fórmula \ref{eq:media_movel}, $MMS_t$ é o valor da série de \gls{MMS} suavizada para a série $X$ no tempo $t$. O parâmetro $n$ indica a janela da média móvel. Quanto maior a janela, mais suavizada é a série. $X_{t-i}$ é o valor da série $X$ no tempo $t-i$, em que $i$ itera sobre o tamanho da janela.
+
+\begin{equation}
+\text{MMS}_t = \frac{1}{n} \sum_{i=0}^{n-1} X_{t-i}
+\label{eq:media_movel}
+\end{equation}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{medias_moveis.png}
+    \caption{Suavização da série temporal por média móvel. (a) Suavização com $n = 3$ dias; (b) Suavização com $n = 7$ dias; (c) Suavização com $n = 30$ dias. Ao fundo de cada exemplo, em cinza, está plotada a série temporal sem suavização.}
+    \label{fig:suavizacao_serie_temporal}
+\end{figure}
+
+A Figura \ref{fig:suavizacao_serie_temporal} apresenta a aplicação de diferentes graus de suavização em uma série. Observa-se que o aumento do grau de suavização reduz as oscilações da série, mantendo a média local.
+
+\section{Agregação Temporal}
+\label{sec:agregacao_temporal}
+
+Uma técnica amplamente utilizada na previsão de séries temporais é a agregação temporal das observações. Transformar a série por meio de agregação temporal permite analisá-la em outros agrupamentos de tempo. Podem se realizados agrupamentos contendo observações semanais, quinzenais ou mensais, por exemplo \citep{salles_evaluating_2016}. Dada uma série temporal $x_t$, com $t = 1, 2, \dots, n$ representando os dias sequenciais, sua versão agregada $X_T$, com janela de agregação de tamanho $m$, é obtida pela fórmula \ref{eq:agregacao_temporal}, em que $T$ indica a sequência de observações da série agregada.
+
+\begin{equation}
+X_T = \sum_{t=(T-1)m + 1}^{tm} x_t, \quad \text{para } T = 1, 2, \dots, \left\lfloor \frac{n}{m} \right\rfloor
+\label{eq:agregacao_temporal}
+\end{equation}
+
+\section{MLP}
+\label{sec:mlp}
+
+
+
+
+\chapter{Trabalhos Relacionados}
+\label{sec:trabalhos_relacionados}
+
+A previsão de séries temporais tem sido amplamente estudada e aplicada em diferentes domínios, como finanças, saúde, indústria e gestão pública. Diversas abordagens foram propostas, desde modelos estatísticos tradicionais até técnicas mais recentes baseadas em aprendizado de máquina.
+
+A revisão sistemática considerou publicações anteriores a 2024, com foco na previsão de receitas públicas por meio de séries temporais, utilizando os termos "previsão de receitas de multas de trânsito; previsão orçamentária" nas bases Scopus e Google Scholar. Diversos resultados foram obtidos. Observou-se que a previsão de receitas públicas é um tema bastante contemplado, porém, em áreas periféricas, como previsão de ICMS, de infrações de trânsito, de IPVA, entre outras. Apesar de se tratar de um tema relevante no contexto do orçamento municipal, verifica-se uma baixa quantidade de estudos voltados à previsão de receitas de multas de trânsito. Apenas dois estudos com temas semelhantes foram encontrados, sendo que apenas um apresenta relação direta com o objetivo deste trabalho.
+
+\citet{da_silva_orcamento_2018}, visando aumentar a efetividade da previsão de receitas do município de Uberlândia, realiza um estudo comparativo entre a previsão de receitas feita pela \gls{SETTRAN}, com base no modelo disponibilizado pela \gls{SOF}, e a previsão realizada com o modelo \gls{ARMA}, no período de 2002 a 2017. O estudo mostra que o modelo ARMA utilizado foi mais preciso, com percentual médio de erros de 17,19\%, frente a 24,47\% do modelo da SOF. Também é demonstrado que o modelo ARMA apresentou erro médio inferior em 9 dos 16 anos analisados. Os autores não realizam qualquer tipo de transformação na série original utilizada.
+
+Em um contexto similar, \citet{naibert_orcamento_2021} compara o desempenho da previsão de receitas de diversos municípios do estado do Rio Grande do Sul entre os anos de 2008 e 2019. O autor realiza um estudo comparativo entre o modelo da \gls{SOF} e o \gls{ARIMA}. Os resultados indicam que o modelo da \gls{SOF} é mais suscetível a erros, enquanto o \gls{ARIMA} apresenta desempenho superior em 83\% dos casos analisados. Observa-se, entretanto, que essa dominância não é uniforme. Por exemplo, no município de Porto Alegre, o modelo da \gls{SOF} foi superior em 11 dos 12 casos testados. Apesar de o estudo indicar a superioridade do \gls{ARIMA} em relação ao modelo da \gls{SOF}, as séries utilizadas estão inseridas em contextos distintos.
+
+De modo geral, a literatura revisada aponta um déficit na capacidade preditiva do modelo da \gls{SOF}, que apresenta desempenho inferior ao modelo \gls{ARIMA}. A previsão de receitas públicas ainda carece de soluções eficazes, o que contribui para tornar o planejamento orçamentário incerto e desatualizado. A comparação com estudos anteriores é limitada por diferenças estruturais entre as séries, particularmente no período pandêmico, que introduz quebras de padrão não modeladas nos trabalhos revisados. Diferentemente dos estudos mencionados, este trabalho explora a transformação da série temporal por suavização e agregação como mecanismo de mitigação de ruídos e de melhoria da acurácia preditiva.
+
+\chapter{Método}
+\label{sec:metodologia} 
+ 
+A metodologia adotada neste trabalho propõe a realização de previsões para séries temporais de arrecadação de multas de trânsito no município do Rio de Janeiro. Dois fluxos são executados: agregações temporais com diferentes janelas e séries com distintos graus de suavização por média móvel. Ao final, os resultados obtidos são utilizados para comparar o desempenho das configurações. As previsões são realizadas no ambiente \textit{RStudio 2024.12.0}, com a função Auto \gls{ARIMA} do pacote \textit{Forecast}, contido na biblioteca \textit{TSPredit} \citep{ogasawara_tspredit_2025}, que seleciona internamente os parâmetros $p$, $d$ e $q$ com base no critério AIC. A seguir, apresenta-se a Seção \ref{sec:base_de_dados}, que fornece informações sobre o conjunto de dados. A Seção \ref{sec:implementacao} descreve as etapas de execução do trabalho. Ressalta-se que os dados utilizados referem-se exclusivamente a registros históricos de pagamentos de multas de trânsito decorrentes de multas já lavradas pelo município, não estando relacionados à definição, alteração ou proposição de políticas de multa, ou fiscalização. A finalidade da pesquisa está restrita à análise estatística da série temporal dessas receitas, com foco na melhoria da acurácia preditiva para fins de planejamento orçamentário, e não à formulação de medidas voltadas ao aumento da arrecadação.
+
+\section{Base de dados} 
+\label{sec:base_de_dados}
+
+Disponibilizada pela \gls{SMTR}, a base de dados é composta por registros de infrações de trânsito no período de 2014 a 2025, contendo informações como data da ocorrência, data de pagamento, valor da infração, tipo de veículo, entre outras. Os dados estão ordenados pela data de pagamento. Neste trabalho, utilizam-se apenas os atributos \textit{Data de Pagamento}, \textit{Valor Pago} e \textit{Data de Ocorrência}.
+
+\section{Implementação}
+\label{sec:implementacao}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/diagrama fluxo tcc.png}
+	\caption{Diagrama representando o fluxo de trabalho para cada exemplo de série.}
+	\label{fig:diagrama_fluxo}
+\end{figure}
+
+A Figura \ref{fig:diagrama_fluxo} representa o fluxo de trabalho adotado. Primeiramente, ocorre o carregamento dos dados. Em seguida, realiza-se o pré-processamento, que inclui o tratamento de valores inválidos, conversões e a definição dos limites temporais da série. Nessa etapa, também são removidas as multas sem valor pago registrado, por impossibilitarem a consolidação da série de receitas efetivas, sendo tratadas como dados censurados. 
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/corte_serie_temporal.png}
+	\caption{Série temporal sinalizando o início com receita reduzida devido à limitação de dados. A linha tracejada indica o limite do recorte da série.}
+	\label{fig:corte_serie_temporal}
+\end{figure}
+
+Após o pré-processamento, ocorre a criação da série efetivamente utilizada para a modelagem. As multas são organizadas de forma com que todas as multas pagas em um mesmo dia sejam somadas, gerando a série temporal de receitas diárias $z_i$, representada pela fórmula \ref{eq:formula serie receita}.
+
+\begin{equation}
+    z_i = \sum_{k=1}^{n} y_k \quad \text{para cada} \quad a_k \in A_{x_i}
+    \label{eq:formula serie receita}
+\end{equation}
+
+\noindent onde:
+\begin{itemize}
+    \setlength{\itemsep}{0pt}  
+    \setlength{\parskip}{0pt}   
+    \item $x_i$: um dia específico no período analisado (i-ésimo dia);
+    \item $A_{x_i} = \{a_1, a_2, \ldots, a_n\}$: conjunto de todas as multas pagas no dia $x_i$;
+    \item $y_k$: valor pago da k-ésima multa $a_k$ no dia $x_i$;
+    \item $n$: número total de multas pagas no dia $x_i$.
+\end{itemize}
+
+Como representado na Figura \ref{fig:corte_serie_temporal}, a série temporal de receitas diárias apresenta distorções significativas em seu início, com baixo volume de receitas em comparação ao restante da série, devido a limitações no registro das multas. Como a janela de obtenção dos dados é finita, principalmente no início da série, o cálculo de $A_{x_i}$ torna-se incerto, pois há multas pagas que não constam no conjunto disponibilizado por terem sido registradas em período anterior ao início da base. Para mitigar esse problema, realizou-se um recorte, excluindo os dados anteriores a 2016. 
+
+Após a criação da série de receitas diárias, aplicam-se duas abordagens distintas para a criação de novas séries: uma com agregação temporal e outra com suavização. No primeiro fluxo, utiliza-se a agregação temporal para agrupar as receitas em janelas mais extensas (\emph{m}), o que reduz a quantidade de observações nas séries resultantes. Paralelamente, em outro fluxo, aplica-se a função \textit{RollMean} do pacote \textit{Zoo} \citep{zeileis_zoo_2005} para suavizar a série. Os parâmetros utilizados nas abordagens de agregação e suavização estão definidos na Tabela \ref{tab:tabela_configuracao_abordagens}. Os valores foram escolhidos por representarem granularidades típicas de calendário (semanal, quinzenal, mensal) com expectativa de que captem ciclos significativos  e também por refletirem variações de curto a médio prazo nas receitas. A notação da tabela ([$i$: $1$, $5$, $10$]) indica que o parâmetro $i$ é definido a cada iteração, respectivamente, com os valores $1$, $5$ e $10$.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Configurações para suavização por média móvel}
+    \begin{tabular}{c c}
+        \hline
+        \textbf{Abordagem} & \textbf{Configuração} \\
+        \hline
+            RollMean & k:[1, 7, 14, 21, 30]; fill:NA; na.rm:TRUE \\
+            Agregação Temporal & m:[7, 15, 30] \\
+        \hline
+    \end{tabular}
+    \label{tab:tabela_configuracao_abordagens}
+\end{table}
+
+Cada série gerada é dividida em conjuntos de treino e teste nas etapas seguintes. A utilização de diferentes janelas de agregação, na Etapa 4.1, torna necessária a adequação do \textit{test\_size}, visto que o tamanho da série muda drasticamente. Assim, conforme apresentado na Tabela \ref{tab:parametros_agregacao}, são definidos tamanhos distintos para que a partição de treino e teste contenha valores razoáveis. Já no fluxo de suavização, considerando que a alteração da quantidade de dados é mínima, o \textit{test\_size} é fixado em 90 observações (3 meses). 
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{c c}
+        \hline
+        \textbf{Janela (m)} & \textbf{test\_size} \\
+        \hline
+        7 & 24 \\
+        15 & 12 \\
+        30 & 6 \\
+        \hline
+    \end{tabular}
+    \caption{Tamanhos de teste utilizados para séries de agregação temporal.}
+    \label{tab:parametros_agregacao}
+\end{table}
+
+Na próxima etapa, os fluxos se unem para uma execução comum. Para realizar o treino e teste do modelo de cada série, aplicam-se iterações da validação cruzada. Empregando essa técnica, realizam-se três iterações cujos tamanhos de teste estão apresentados na Seção \ref{sec:implementacao}. Após o término de cada iteração, uma nova é iniciada com a janela sendo deslocada para frente pela mesma quantidade de observações do teste. Em cada iteração, realiza-se o treino do modelo Auto \gls{ARIMA} e, em seguida, as previsões com os dados de teste. Os resultados de cada teste são armazenados em vetores para cálculos posteriores. No cálculo das médias e resultados, os vetores são utilizados para calcular as médias das métricas \gls{SMAPE}, \gls{MSE} e \gls{R2}. Em seguida, ocorre o agrupamento e a análise dos resultados. Por fim, os resultados são organizados na seção seguinte para melhor apresentação.
+
+\chapter{Considerações Parciais}
+\label{sec:consideracoes_parciais}
+
+Na Seção \ref{sec:aval_exp}, são apresentados os resultados preliminares obtidos após o processo experimental, seguidos de uma breve análise quantitativa e qualitativa com interpretação dos resultados. Na Seção \ref{sec:planejamento}, é exibido o cronograma de atividades elaborado para a conclusão deste trabalho na próxima etapa.
+
+\section{Resultados Preliminares}
+\label{sec:aval_exp}
+
+Esta seção apresenta e compara os resultados obtidos na experimentação, conforme organizados na Tabela \ref{tab:tabela_resultados}. A avaliação foi realizada com base na técnica de validação cruzada por janela móvel. A métrica \gls{R2} foi priorizada como critério de ranqueamento por representar a proporção da variância explicada pelo modelo, sendo adequada para avaliar previsões com foco em explicabilidade global \citep{chicco_coefficient_2021}. Os gráficos utilizados mostram um recorte com uma janela de visualização aproximada ao período de previsão. A linha listrada em azul indica o ajuste do modelo à série temporal, enquanto a linha em verde indica os valores previstos.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Resultados obtidos na experimentação ranqueados em ordem crescente de $\boldsymbol{R^2}$.}
+    \begin{tabular}{c c c c c c c}
+        \textbf{Rank} & \textbf{Configuração} & \textbf{Tam. Série} & \textbf{Tam. Teste} & $\boldsymbol{R^2}$ & \textbf{smape} & \textbf{mse} \\
+        \hline
+        1 & SV$_{k=1}$ & 2546 & $90 \times 3$ & -0.248 & 0.686 & $2{,}199\times10^{11}$  \\
+        2 & AT$_{m=30}$ & 108 & $6 \times 3$ & -1.606 & 0.525 & $1{,}548\times10^{14}$  \\
+        3 & SV$_{k=7}$ & 2540 & $90 \times 3$ & -2.603 & 0.287 & $5{,}349\times10^{10}$  \\
+        4 & AT$_{m=7}$ & 470 & $24 \times 3$ & -2.743 & 0.336 & $5{,}187\times10^{12}$  \\
+        5 & SV$_{k=30}$ & 2517 & $90 \times 3$ & -3.402 & 0.146 & $2{,}752\times10^{10}$  \\
+        6 & SV$_{k=14}$ & 2533 & $90 \times 3$ & -3.662 & 0.232 & $4{,}298\times10^{10}$  \\
+        7 & SV$_{k=21}$ & 2526 & $90 \times 3$ & -5.234 & 0.234 & $6{,}870\times10^{10}$  \\
+        8 & AT$_{m=15}$ & 216 & $12 \times 3$ & -15.145 & 0.380 & $2{,}953\times10^{13}$  \\
+        \hline
+    \end{tabular}
+    \label{tab:tabela_resultados}
+\end{table}
+
+A configuração SV$_{k=1}$ apresentou o melhor desempenho para essa métrica. No entanto, também obteve o pior valor de SMAPE, possivelmente em razão da presença de outliers não suavizados. Embora nenhuma das configurações tenha alcançado desempenho satisfatório em todas as métricas após a validação cruzada, observa-se que as quatro séries mais suavizadas compõem o grupo com menor SMAPE dos experimentos, destacando-se SV$_{k=30}$, com valor de 0{,}146. Esse resultado pode decorrer da maior constância da média local nas séries suavizadas, como mostram as figuras \ref{fig:sv21fold2} e \ref{fig:sv30fold2}. 
+
+Como visto nas figuras \ref{fig:sv30fold2} e \ref{fig:sv21fold2}, em casos específicos, quando há grande variação na tendência da série, o modelo apresenta dificuldade para adaptar-se aos valores futuros. Nas figuras \ref{fig:sv30fold1} e \ref{fig:sv30fold3}, o modelo aparenta ter capturado melhor o comportamento da série, pois, após uma breve variação, as previsões se ajustaram e se mantiveram próximas dos valores reais. Na maioria dos casos, o Auto \gls{ARIMA}, tanto para suavização quanto para agregação, não conseguiu captar adequadamente as tendências e sazonalidades da série de forma a replicá-las na previsão. As figuras \ref{fig:at15fold2}, \ref{fig:at15fold3}, \ref{fig:at30fold1} e \ref{fig:at30fold3}, referentes à previsão por agregação temporal, corroboram os dados da Tabela \ref{tab:tabela_resultados}, onde \gls{SMAPE} apresenta valores maiores em comparação às configurações com suavização. Visualiza-se que a previsão pouco se aproxima dos pontos futuros e, ao longo do tempo, não se mantém próxima da média local. 
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/sv21_img2.png}
+	\caption{SV$_{k=21}$ - Iteração 2. Previsão da receita no período de 90 dias.}
+	\label{fig:sv21fold2}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/sv30_img2.png}
+	\caption{SV$_{k=30}$ - Iteração 2. Previsão da receita no período de 90 dias.}
+	\label{fig:sv30fold2}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/sv30_img1.png}
+	\caption{SV$_{k=30}$ - Iteração 1. Previsão da receita no período de 90 dias.}
+	\label{fig:sv30fold1}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/sv30_img3.png}
+	\caption{SV$_{k=30}$ - Iteração 3. Previsão da receita no período de 90 dias.}
+	\label{fig:sv30fold3}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/at15_img2.png}
+	\caption{AT$_{m=15}$ - Iteração 2. Previsão da receita no período de 6 meses.}
+	\label{fig:at15fold2}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/at15_img3.png}
+	\caption{AT$_{m=15}$ - Iteração 3. Previsão da receita no período de 6 meses.}
+	\label{fig:at15fold3}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/at30_img1.png}
+	\caption{AT$_{m=30}$ - Iteração 1. Previsão da receita no período de 6 meses.}
+	\label{fig:at30fold1}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/at30_img3.png}
+	\caption{AT$_{m=30}$ - Iteração 3. Previsão da receita no período de 6 meses.}
+	\label{fig:at30fold3}
+\end{figure}
+
+Este trabalho evidenciou que a suavização por média móvel tende a melhorar o desempenho do modelo Auto \gls{ARIMA} na previsão de receitas de multas, segundo a métrica SMAPE, em um curto intervalo de tempo. No entanto, os resultados de \gls{R2} indicam baixa explicabilidade geral do modelo, possivelmente explicadas pelas quebras estruturais ao decorrer da série e configurações simples de validação cruzada. Estes casos podem ser estudados com uso de técnicas mais robustas e aplicação de novas configurações de validação cruzada em trabalhos futuros. Para a continuação deste estudo, pretende-se melhorar a metodologia e aplicar modelos de aprendizado de máquina mais sofisticados, com o objetivo de aprimorar o desempenho da previsão das receitas de multas de trânsito do município do Rio de Janeiro.
+
+\section{Planejamento}
+\label{sec:planejamento}
+
+A Tabela \ref{tab:cronograma_detalhado} apresenta o cronograma estratégico para a continuação deste trabalho. Na primeira atividade, será realizada a experimentação com diferentes modelos e configurações de hiperparâmetros. Em seguida, a segunda atividade corresponde à elaboração da fundamentação teórica dos novos modelos inseridos. A terceira atividade consiste na descrição da metodologia aprimorada. Na quarta atividade, serão organizados os resultados obtidos. A quinta atividade refere-se ao desenvolvimento da conclusão. Por fim, na última atividade, será preparada a apresentação do trabalho.
+
+\begin{table}[!ht]
+\centering
+\caption{Cronograma estratégico do TCC2 (meses 1 a 6)}
+\label{tab:cronograma_detalhado}
+\large
+\begin{tabular}{l c c c c c c}
+\toprule
+\multirow{2}{*}{Atividade} & \multicolumn{6}{c}{Meses} \\
+\cmidrule(lr){2-7}
+& ago & set & out & nov & dez & jan \\
+\midrule
+Realizar a experimentação & X & X & & & & \\
+Elaborar a fundamentação teórica & & & X & X & & \\
+Elaborar a metodologia & & & X & X & & \\
+Organizar os resultados & & & & & X & \\
+Elaborar a conclusão & & & & & X & \\
+Preparar a apresentação & & & & & & X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newcommand{\Extrachap}[1]{\chapter*{#1}\markboth{#1}{#1}
+\addcontentsline{toc}{chapter}{#1}}
+
+\Extrachap{Referências}
+
+\renewcommand{\bibsection}{}
+\renewcommand{\bibname}{}
+
+\bibliography{references}
+\bibliographystyle{apalike}
+\label{bibfinalpage}
+
+\label{lastpage}
+\end{document}
