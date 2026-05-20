@@ -3,7 +3,6 @@
 ## Previsão de Receitas de Multas de Trânsito do Município do Rio de Janeiro
 
 **Aluno:** Carlos Henrique de Oliveira Pereira
-**Semestre de Defesa:** *(ex.: 2025-2)*
 
 **Documento do TCC:**
 [TCC2_Carlos.pdf](https://github.com/user-attachments/files/24785906/TCC2_Carlos.pdf)
