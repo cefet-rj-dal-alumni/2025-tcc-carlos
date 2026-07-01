@@ -4,6 +4,8 @@
 
 **TCC:** Previsão de Receitas de Multas de Trânsito do Município do Rio de Janeiro
 
+**Semestre de Defesa:** 2025-2
+
 [PDF do TCC](TCC_Carlos.pdf)
 
 ---
