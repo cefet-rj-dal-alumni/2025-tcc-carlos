@@ -10,7 +10,7 @@ wf_rf <- function(test_size, datasets){
   ranges <- list(nodesize=c(10, 20), ntree=100)
   params <- list(sw_size=sw_size, preprocess=preprocess, augment=augment, ranges=ranges)
   
-  results2 <- list()
+  results2 <- NULL
   
   for (ds in datasets) {
     
@@ -34,7 +34,7 @@ wf_rf <- function(test_size, datasets){
           results2 <- rbind(results2, novo_resultado)
         }, error = function(e) {
           print('erro')
-          error_dir <- sprintf('./error/%s', sub('-.*', '', ds))
+          error_dir <- dirname(sprintf('./error/%s', name))
           if (!dir.exists(error_dir))
             dir.create(error_dir, recursive = TRUE)
           error_file <- sprintf('./error/%s', name)
@@ -43,7 +43,7 @@ wf_rf <- function(test_size, datasets){
       }
       
       # Ordenar results2 por R² decrescente e pegar os 3 melhores
-      if (nrow(results2) > 0) {
+      if (!is.null(results2) && nrow(results2) > 0) {
         # Ordenar por R² decrescente
         results2_ordenado <- results2[order(-results2$r2), ]
         
@@ -82,6 +82,7 @@ wf_rf <- function(test_size, datasets){
       }
       
       save(results2, file=sprintf('%s.rdata', sub('/', '/results/', filename)))
+      if (!is.null(results2)) write.csv(results2, file=sprintf('%s.csv', sub('/', '/results/', filename)), row.names=FALSE)
     }
   }
 }

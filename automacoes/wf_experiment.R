@@ -148,9 +148,7 @@ run_ml <- function( x,
   best_model <- train_ml(model, x[1:train_size], params)
   
   if (is.null(best_model)) {
-    #params$preprocess <- list(ts_norm_gminmax())
-    #params$sw_size <- c(10)
-    #best_model <- train_ml(model, x[1:train_size], params)
+    return(NULL)
   }
   # Predict
   results <- NULL
@@ -200,20 +198,37 @@ train_ml <- function(obj, x, params) {
       if (as.character(describe(obj$base_model)) == 'ts_conv1d') input_size <- input_size - 1
       if (as.character(describe(obj$base_model)) == 'ts_lstm') input_size <- input_size - 1
       ranges <- list(input_size=input_size, preprocess=list(dn), augment=params$augment, ranges=params$ranges)
-      obj <- set_params(obj, ranges)
+      obj$input_size <- input_size
+      obj$preprocess <- list(dn)
       
       # Tuning
       if (obj$sw_size != 0) {
-        tune <- ts_integtune(obj$input_size, obj$base_model, folds=10, range=obj$ranges, preprocess=obj$preprocess, augment=obj$augment)
         tryCatch({
-          obj$model <- fit(tune, xy$input, xy$output, obj$ranges)
+          model_tmp <- obj$base_model
+          model_tmp$input_size <- input_size
+          model_tmp$preprocess <- dn
+          model_tmp$ts_as_matrix <- function(data, input_size) {
+            data <- unclass(data)
+            n <- ncol(data)
+            if (input_size > n) input_size <- n
+            idx <- (n - input_size + 1):n
+            result <- data[, idx, drop=FALSE]
+            return(result)
+          }
+          for (param in names(params$ranges)) {
+            if (param == 'input_size') next
+            val <- params$ranges[[param]]
+            if (is.factor(val)) val <- as.character(val)
+            if (length(val) == 1) {
+              model_tmp[[param]] <- val
+            }
+          }
+          obj$model <- fit(model_tmp, xy$input, xy$output)
           obj$input_size <- obj$model$input_size
           obj$preprocess <- obj$model$preprocess
-          obj$augment <- attr(obj$model, 'augment')
-          attr(obj$model, 'hyperparameters')$window_size <- obj$sw_size
-          hyperparameters <- rbind(hyperparameters, attr(obj$model, 'hyperparameters'))
+          obj$augment <- ts_aug_none()
         }, error = function(e) {
-          return(NULL)
+          cat("    FIT ERROR:", conditionMessage(e), "\n")
         })
       } else {
         obj$model <- fit(obj$base_model, x=xy$input, y=xy$output)
@@ -222,9 +237,9 @@ train_ml <- function(obj, x, params) {
         obj$augment <- ts_aug_none()
       }
       if (!is.null(obj$model)) {
-        # Evaluation
         obj$adjust <- as.vector(predict(obj$model, xy$input))
         obj$ev_adjust <- evaluate(obj$model, as.vector(xy$output), obj$adjust)
+        if (is.null(obj$ev_adjust)) next
         error <- obj$ev_adjust$smape*100
         if (!is.na(error) && error < best_error) {
           best_error <- error
@@ -263,11 +278,26 @@ test_ml <- function(obj, x, test_pos, test_size, steps_ahead=1, save_model = FAL
   # Testing
   if (steps_ahead == 1)  {
     strategy <- 'ro'
-    obj$prediction <- predict(obj$model, x=xyt$input, steps_ahead=steps_ahead)
+    obj$prediction <- as.vector(predict(obj$model, x=unclass(xyt$input)))
     index <- test_size
   } else {
     strategy <- 'sa'
-    obj$prediction <- predict(obj$model, x=xyt$input[1,], steps_ahead=steps_ahead)
+    x_input <- unclass(xyt$input)
+    ncols <- ncol(x_input)
+    preds <- numeric(steps_ahead)
+    if (ncols <= 1) {
+      preds <- as.vector(predict(obj$model, x=x_input, steps_ahead=steps_ahead))
+    } else {
+      cn <- colnames(x_input)
+      x_step <- x_input[nrow(x_input), , drop=FALSE]
+      for (i in 1:steps_ahead) {
+        x_step2 <- rbind(x_step, x_step)
+        preds[i] <- predict(obj$model, x=x_step2)[1]
+        x_step <- matrix(c(x_step[2:ncols], preds[i]), nrow=1)
+        colnames(x_step) <- cn
+      }
+    }
+    obj$prediction <- preds
     index <- 1:test_size
     output <- output[index]
   }

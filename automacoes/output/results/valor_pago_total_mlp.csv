@@ -1,0 +1,9 @@
+"name","instance","dataset","ts","model","preprocess","augment","window_size","test_size","strategy","mse","smape","r2"
+"ts_mlp","total_mlp_sw-36_norm-an_aug-none_inputsize-NA_size-16_decay-0.1_maxit-1000","pago","valor","total","an","none",36,12,"sa",118624378818146,44.1641768584283,-0.579828891293115
+"ts_mlp","total_mlp_sw-36_norm-an_aug-none_inputsize-NA_size-16_decay-0.2_maxit-1000","pago","valor","total","an","none",36,12,"sa",107802000118683,40.5631437640291,-0.435697417541523
+"ts_mlp","total_mlp_sw-48_norm-an_aug-none_inputsize-NA_size-16_decay-0.1_maxit-1000","pago","valor","total","an","none",48,12,"sa",203727154445302,58.0277202898366,-1.71322006269077
+"ts_mlp","total_mlp_sw-48_norm-an_aug-none_inputsize-NA_size-16_decay-0.2_maxit-1000","pago","valor","total","an","none",48,12,"sa",207607576463582,61.2925709529711,-1.76489917684897
+"ts_mlp","total_mlp_sw-36_norm-ean_aug-none_inputsize-NA_size-16_decay-0.1_maxit-1000","pago","valor","total","ean","none",36,12,"sa",114949924793860,42.3894732855015,-0.530892840498745
+"ts_mlp","total_mlp_sw-36_norm-ean_aug-none_inputsize-NA_size-16_decay-0.2_maxit-1000","pago","valor","total","ean","none",36,12,"sa",101472206793772,38.2633983192164,-0.351397794898702
+"ts_mlp","total_mlp_sw-48_norm-ean_aug-none_inputsize-NA_size-16_decay-0.1_maxit-1000","pago","valor","total","ean","none",48,12,"sa",204453480017573,60.7257547569313,-1.7228932018464
+"ts_mlp","total_mlp_sw-48_norm-ean_aug-none_inputsize-NA_size-16_decay-0.2_maxit-1000","pago","valor","total","ean","none",48,12,"sa",170474757269376,53.6034149048094,-1.27036760448051
