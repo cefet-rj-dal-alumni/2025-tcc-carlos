@@ -1,4 +1,4 @@
-# Previsão de Receitas de Multas de Trânsito do Rio de Janeiro
+# TCC 2025_2 - Previsão de Receitas de Multas de Trânsito do Rio de Janeiro
 
 **Aluno:** Carlos Henrique de Oliveira Pereira
 
